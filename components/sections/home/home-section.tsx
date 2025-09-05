@@ -77,7 +77,11 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
 
   return (
     <div className="p-6">
-      <CalendarHeader currentDate={currentDate} setCurrentDate={setCurrentDate} />
+      <CalendarHeader
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        viewMode={viewMode as "month" | "week"}
+      />
 
       {renderCalendarView()}
 

@@ -1,5 +1,5 @@
 "use client"
-import { MapPin, ChevronDown } from "lucide-react"
+import { MapPin, ChevronDown, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { SidebarNavigation } from "./sidebar-navigation"
@@ -20,11 +20,14 @@ export function AppSidebar({
   locations,
 }: AppSidebarProps) {
   return (
-    <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
+    <div className="bg-sidebar border-r border-sidebar-border flex flex-col w-[200]">
       {/* Header */}
-      <div className="p-6 border-b border-sidebar-border">
-        <h1 className="text-xl font-heading font-bold text-sidebar-foreground">OneOfUs.beer</h1>
-        <p className="text-sm text-sidebar-foreground/70">Saints Calendar</p>
+      <div className="p-6 border-b border-sidebar-border px-0 py-0 h-20">
+        <div className="flex flex-col items-center mb-2">
+          <Calendar className="h-6 w-6 text-sidebar-foreground mb-2" />
+          <h1 className="text-xl font-heading font-bold text-sidebar-foreground">OneOfUs.beer</h1>
+        </div>
+        
       </div>
 
       {/* Location Dropdown */}

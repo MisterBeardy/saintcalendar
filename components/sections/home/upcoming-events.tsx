@@ -24,7 +24,7 @@ export function UpcomingEvents({ onEventClick, currentDate }: UpcomingEventsProp
     "December",
   ]
 
-  const monthEvents = sampleEvents
+  let monthEvents = sampleEvents
     .filter((event) => {
       if (event.eventType === "saint-day") {
         return event.month === currentDate.getMonth() + 1
@@ -33,6 +33,35 @@ export function UpcomingEvents({ onEventClick, currentDate }: UpcomingEventsProp
       }
     })
     .slice(0, 3)
+
+  // If no events in current month, show next available events
+  if (monthEvents.length === 0) {
+    monthEvents = sampleEvents
+      .filter((event) => {
+        if (event.eventType === "saint-day") {
+          return true // Show all saint days
+        } else {
+          return event.achievementYear >= currentDate.getFullYear()
+        }
+      })
+      .sort((a, b) => {
+        // Sort by month and date
+        if (a.month !== b.month) return a.month - b.month
+        return a.date - b.date
+      })
+      .slice(0, 3)
+  }
+
+  if (monthEvents.length === 0) {
+    return (
+      <div className="mt-6">
+        <h4 className="font-heading font-semibold mb-3">Upcoming Events</h4>
+        <div className="p-4 bg-muted/50 rounded-lg text-center text-muted-foreground">
+          <p>No upcoming events found</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-6">
