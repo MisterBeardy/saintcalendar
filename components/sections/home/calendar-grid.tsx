@@ -1,5 +1,7 @@
 "use client"
 
+"use client"
+
 import type { SaintEvent, MilestoneEvent } from "@/types/saint-events"
 import { sampleEvents } from "@/data/sample-events"
 

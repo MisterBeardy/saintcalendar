@@ -34,7 +34,7 @@ export function MainContent({ title, children, actions }: MainContentProps) {
       </div>
 
       {/* Content */}
-      <main className="flex-1 overflow-auto p-6">{children}</main>
+      <main className="flex-1 overflow-visible p-6">{children}</main>
     </>
   )
 }

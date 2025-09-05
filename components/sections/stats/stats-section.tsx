@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+"use client"
+
+import { useState, useEffect } from "react"
 import { BarChart3 } from "lucide-react"
 import { LocationComparisonChart } from "./location-comparison-chart"
 import { StateVsStateChart } from "./state-vs-state-chart"
@@ -10,12 +12,38 @@ import { MilestoneBreakdownChart } from "./milestone-breakdown-chart"
 interface StatsSectionProps {
   selectedLocation: string
   dataSource: "mock" | "database"
+  activeSubSection?: string
 }
 
-export function StatsSection({ selectedLocation, dataSource }: StatsSectionProps) {
-  const [selectedChart, setSelectedChart] = useState("locations")
+function getChartFromSubSection(sub?: string) {
+  if (!sub) return "locations"
+  if (!sub.startsWith("stats")) return "locations"
+  const parts = sub.split("-")
+  const key = parts[1] || "locations"
+  switch (key) {
+    case "locations":
+      return "locations"
+    case "states":
+      return "states"
+    case "trends":
+      return "trends"
+    case "milestones":
+      return "milestones"
+    default:
+      return "locations"
+  }
+}
+
+export function StatsSection({ selectedLocation, dataSource, activeSubSection }: StatsSectionProps) {
+  const [selectedChart, setSelectedChart] = useState(() => getChartFromSubSection(activeSubSection))
 
   console.log("[v0] StatsSection dataSource:", dataSource)
+
+  // Sync selected tab with sidebar sub-menu selection
+  useEffect(() => {
+    const next = getChartFromSubSection(activeSubSection)
+    setSelectedChart(next)
+  }, [activeSubSection])
 
   if (dataSource === "database") {
     return (
@@ -50,27 +78,10 @@ export function StatsSection({ selectedLocation, dataSource }: StatsSectionProps
   ]
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Chart Selection Tabs */}
-      <div className="flex gap-2 p-1 bg-muted rounded-lg">
-        {chartOptions.map((option) => (
-          <button
-            key={option.id}
-            onClick={() => setSelectedChart(option.id)}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              selectedChart === option.id
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span>{option.icon}</span>
-            {option.label}
-          </button>
-        ))}
-      </div>
+    <div className="p-5 pb-[122px] mb-[115px]">
 
       {selectedChart === "locations" && <LocationComparisonChart selectedLocation={selectedLocation} />}
-      {selectedChart === "states" && <StateVsStateChart />}
+      {selectedChart === "states" && <StateVsStateChart selectedLocation={selectedLocation} dataSource={dataSource} />}
       {selectedChart === "trends" && <MonthlyTrendsChart />}
       {selectedChart === "milestones" && <MilestoneBreakdownChart />}
     </div>

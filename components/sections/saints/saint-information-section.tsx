@@ -1,5 +1,7 @@
 "use client"
 
+"use client"
+
 import { useState } from "react"
 import { Users, Trophy, Award, Star, Crown } from "lucide-react"
 import { SaintSearch } from "./saint-search"
@@ -71,10 +73,6 @@ export function SaintInformationSection({
         // Show last 5 saints by sainted year (most recent first)
         return saints.sort((a, b) => b.saintedYear - a.saintedYear).slice(0, 5)
 
-      case "saints-search":
-        // Search mode - show search interface prominently
-        return saints
-
       case "saints-milestones":
         // Show saints with milestone achievements (2000+ beers)
         return saints.filter((saint) => saint.totalBeers >= 2000).sort((a, b) => b.totalBeers - a.totalBeers)
@@ -88,7 +86,7 @@ export function SaintInformationSection({
 
   const filteredSaints = getFilteredSaints()
 
-  const showSearchInterface = activeSubSection === "saints-search" || searchTerm
+  const showSearchInterface = activeSubSection === "saints-search" || activeSubSection === "saints-all" || searchTerm
 
   const getMilestoneTier = (beers: number) => {
     if (beers >= 5000) return { tier: "Legendary", icon: Crown, color: "text-purple-600", bg: "bg-purple-100" }
@@ -177,13 +175,11 @@ export function SaintInformationSection({
       <div className="mb-6">
         <h2 className="text-xl font-heading font-semibold">
           {activeSubSection === "saints-recent" && "Recent Saints"}
-          {activeSubSection === "saints-search" && "Search Saints"}
           {activeSubSection === "saints-milestones" && "Saint Milestones"}
           {(activeSubSection === "saints-all" || !activeSubSection) && "All Saints"}
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
           {activeSubSection === "saints-recent" && "Showing the 5 most recently sainted members"}
-          {activeSubSection === "saints-search" && "Search for saints by name or saint name"}
           {activeSubSection === "saints-milestones" && "Saints who have achieved major beer milestones (2000+)"}
           {(activeSubSection === "saints-all" || !activeSubSection) && `Showing all saints for ${selectedLocation}`}
         </p>

@@ -1,5 +1,7 @@
 "use client"
 
+"use client"
+
 import { HomeSection } from "@/components/sections/home/home-section"
 import { SaintInformationSection } from "@/components/sections/saints/saint-information-section"
 import { StickerBoxSection } from "@/components/sections/stickers/sticker-box-section"

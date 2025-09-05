@@ -9,12 +9,12 @@ interface SidebarLayoutProps {
 
 export function SidebarLayout({ sidebar, children }: SidebarLayoutProps) {
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       {/* Sidebar Container */}
       <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">{sidebar}</div>
 
       {/* Main Content Container */}
-      <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
+      <div className="flex-1 flex flex-col overflow-visible">{children}</div>
     </div>
   )
 }

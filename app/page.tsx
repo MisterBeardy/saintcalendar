@@ -1,5 +1,7 @@
 "use client"
 
+"use client"
+
 import type React from "react"
 
 import { useState } from "react"
@@ -32,8 +34,124 @@ export default function SaintsCalendarApp() {
   const locations = getAllLocationOptions()
   const activeItem = navigationItems.find((item) => item.id === activeSection)
 
+  // Get dynamic header information based on current view
+  const getHeaderInfo = () => {
+    const baseInfo = {
+      activeItemLabel: activeItem?.label || "Home",
+      activeItemDescription: activeItem?.description || "Calendar of saint activities",
+      selectedLocation,
+      submenuLabel: undefined as string | undefined,
+      submenuDescription: undefined as string | undefined,
+    }
+
+    // Extract base section from activeSection (e.g., "saints" from "saints-all")
+    const baseSection = activeSection.split('-')[0]
+
+    // Add section-specific header information
+    switch (baseSection) {
+      case "home":
+        baseInfo.activeItemLabel = "Home"
+        baseInfo.activeItemDescription = "Calendar of saint activities"
+        if (activeSection === "home-week") {
+          baseInfo.submenuLabel = "Week View"
+          baseInfo.submenuDescription = "Weekly calendar view"
+        } else if (activeSection === "home-table") {
+          baseInfo.submenuLabel = "Table View"
+          baseInfo.submenuDescription = "List format calendar"
+        } else {
+          baseInfo.submenuLabel = "Month View"
+          baseInfo.submenuDescription = "Monthly calendar view"
+        }
+        break
+      case "saints":
+        baseInfo.activeItemLabel = "Saint Information"
+        baseInfo.activeItemDescription = "Saint profiles and details"
+        if (activeSection === "saints-all") {
+          baseInfo.submenuLabel = "All Saints"
+          baseInfo.submenuDescription = "Browse all saint profiles"
+        } else if (activeSection === "saints-recent") {
+          baseInfo.submenuLabel = "Recent Saints"
+          baseInfo.submenuDescription = "Latest saint additions"
+        } else if (activeSection === "saints-milestones") {
+          baseInfo.submenuLabel = "Saint Milestones"
+          baseInfo.submenuDescription = "Saints with major beer achievements"
+        } else {
+          baseInfo.submenuLabel = "Browse Saints"
+          baseInfo.submenuDescription = "Search and explore saint profiles"
+        }
+        break
+      case "stickers":
+        baseInfo.activeItemLabel = "Sticker Box"
+        baseInfo.activeItemDescription = "Sticker gallery and search"
+        if (activeSection === "stickers-gallery") {
+          baseInfo.submenuLabel = "Sticker Gallery"
+          baseInfo.submenuDescription = "Browse all available stickers"
+        } else if (activeSection === "stickers-search") {
+          baseInfo.submenuLabel = "Search Stickers"
+          baseInfo.submenuDescription = "Find specific stickers"
+        } else if (activeSection === "stickers-favorites") {
+          baseInfo.submenuLabel = "Favorite Stickers"
+          baseInfo.submenuDescription = "Your saved sticker collection"
+        } else {
+          baseInfo.submenuLabel = "Sticker Collection"
+          baseInfo.submenuDescription = "Manage and organize your sticker gallery"
+        }
+        break
+      case "stats":
+        baseInfo.activeItemLabel = "Stats"
+        baseInfo.activeItemDescription = "Charts and analytics"
+        if (activeSection === "stats-locations") {
+          baseInfo.submenuLabel = "Location Statistics"
+          baseInfo.submenuDescription = "Compare performance by location"
+        } else if (activeSection === "stats-states") {
+          baseInfo.submenuLabel = "State vs State"
+          baseInfo.submenuDescription = "State-by-state comparisons"
+        } else if (activeSection === "stats-trends") {
+          baseInfo.submenuLabel = "Monthly Trends"
+          baseInfo.submenuDescription = "Track performance over time"
+        } else if (activeSection === "stats-milestones") {
+          baseInfo.submenuLabel = "Milestone Analytics"
+          baseInfo.submenuDescription = "Achievement tracking and analysis"
+        } else {
+          baseInfo.submenuLabel = "Analytics Dashboard"
+          baseInfo.submenuDescription = "View charts and performance metrics"
+        }
+        break
+      case "admin":
+        baseInfo.activeItemLabel = "Admin"
+        baseInfo.activeItemDescription = "Data management tools"
+        if (activeSection === "admin-overview") {
+          baseInfo.submenuLabel = "Admin Dashboard"
+          baseInfo.submenuDescription = "System overview and management"
+        } else if (activeSection === "admin-saints") {
+          baseInfo.submenuLabel = "Saint Management"
+          baseInfo.submenuDescription = "Manage saint profiles and data"
+        } else if (activeSection === "admin-stickers") {
+          baseInfo.submenuLabel = "Sticker Management"
+          baseInfo.submenuDescription = "Approve and manage stickers"
+        } else if (activeSection === "admin-locations") {
+          baseInfo.submenuLabel = "Location Management"
+          baseInfo.submenuDescription = "Manage location data"
+        } else if (activeSection === "admin-pending") {
+          baseInfo.submenuLabel = "Pending Changes"
+          baseInfo.submenuDescription = "Review and approve changes"
+        } else if (activeSection === "admin-changelog") {
+          baseInfo.submenuLabel = "Change Log"
+          baseInfo.submenuDescription = "Audit trail and history"
+        } else {
+          baseInfo.submenuLabel = "System Management"
+          baseInfo.submenuDescription = "Configure data sources and user permissions"
+        }
+        break
+    }
+
+    return baseInfo
+  }
+
+  const headerInfo = getHeaderInfo()
+
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <AppSidebar
         selectedLocation={selectedLocation}
         setSelectedLocation={setSelectedLocation}
@@ -41,22 +159,22 @@ export default function SaintsCalendarApp() {
         setActiveSection={setActiveSection}
         locations={locations}
       />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-visible">
         <AppHeader
-          activeItemLabel={activeItem?.label || "Home"}
-          activeItemDescription={activeItem?.description || "Calendar of saint activities"}
-          selectedLocation={selectedLocation}
+          activeItemLabel={headerInfo.activeItemLabel}
+          activeItemDescription={headerInfo.activeItemDescription}
+          selectedLocation={headerInfo.selectedLocation}
+          submenuLabel={headerInfo.submenuLabel}
+          submenuDescription={headerInfo.submenuDescription}
         />
-
-        <div className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-visible">
           <ContentRouter
             activeSection={activeSection}
             selectedLocation={selectedLocation}
             dataSource={dataSource}
             setDataSource={setDataSource}
           />
-        </div>
+        </main>
       </div>
     </div>
   )

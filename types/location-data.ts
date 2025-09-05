@@ -3,6 +3,13 @@ export interface Location {
   state: string
   city: string
   displayName: string
+  address: string
+  phoneNumber: string
+  sheetId: string
+  isActive: boolean
+  managerEmail: string
+  opened: string | null
+  exclude?: string
 }
 
 export interface LocationsByState {

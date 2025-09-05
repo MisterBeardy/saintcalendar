@@ -1,7 +1,9 @@
 "use client"
 
+"use client"
+
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Calendar, Users, ImageIcon, BarChart3, Settings, ChevronDown, ChevronRight } from "lucide-react"
 
 interface SubMenuItem {
@@ -37,7 +39,6 @@ const navigationItems: NavigationItem[] = [
     description: "Saint profiles",
     subItems: [
       { id: "saints-all", label: "All Saints", description: "Browse all saints" },
-      { id: "saints-search", label: "Search Saints", description: "Find specific saints" },
       { id: "saints-recent", label: "Recent Saints", description: "Latest additions" },
       { id: "saints-milestones", label: "Milestones", description: "Beer achievements" },
     ],
@@ -88,6 +89,20 @@ interface SidebarNavigationProps {
 
 export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNavigationProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+
+  // Auto-expand the section containing the active item
+  useEffect(() => {
+    const baseSection = activeSection.split('-')[0]
+    const sectionWithSubItems = navigationItems.find(item => 
+      item.id === baseSection && item.subItems
+    )
+    
+    if (sectionWithSubItems) {
+      setExpandedSections(new Set([baseSection]))
+    } else {
+      setExpandedSections(new Set())
+    }
+  }, [activeSection])
 
   const toggleSection = (sectionId: string) => {
     const newExpanded = new Set(expandedSections)
