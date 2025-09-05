@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Updated color palette to green-focused theme from design brief */
+  --background: #ffffff; /* Main Background */
+  --foreground: #374151; /* Main Text */
+  --card: #f0fdf4; /* Card Background - light green tint */
+  --card-foreground: #374151; /* Card Text */
+  --popover: #ffffff; /* Popover Background */
+  --popover-foreground: #374151; /* Popover Text */
+  --primary: #15803d; /* Primary Actions - green-700 */
+  --primary-foreground: #ffffff; /* Primary Text on Actions */
+  --secondary: #84cc16; /* Accent Actions - lime-500 */
+  --secondary-foreground: #374151; /* Secondary Text */
+  --muted: #f0fdf4; /* Muted Elements - light green */
+  --muted-foreground: #374151; /* Muted Text */
+  --accent: #84cc16; /* Accent Color for Highlights */
+  --accent-foreground: #ffffff; /* Accent Text */
+  --destructive: #d97706; /* Destructive Actions - amber-600 */
+  --destructive-foreground: #ffffff; /* Destructive Text */
+  --border: #d1d5db; /* Borders - gray-300 */
+  --input: #f0fdf4; /* Input Fields - light green */
+  --ring: rgba(21, 128, 61, 0.5); /* Focus Ring - primary with opacity */
+  --chart-1: #15803d; /* Chart Color 1 - primary */
+  --chart-2: #84cc16; /* Chart Color 2 - accent */
+  --chart-3: #d97706; /* Chart Color 3 - amber */
+  --chart-4: #6366f1; /* Chart Color 4 - indigo */
+  --chart-5: #f59e0b; /* Chart Color 5 - yellow */
+  --radius: 0.5rem; /* Corner Rounding */
+  --sidebar: #f0fdf4; /* Sidebar Background - light green */
+  --sidebar-foreground: #374151; /* Sidebar Text */
+  --sidebar-primary: #15803d; /* Sidebar Primary Color */
+  --sidebar-primary-foreground: #ffffff; /* Sidebar Primary Text */
+  --sidebar-accent: #84cc16; /* Sidebar Accent */
+  --sidebar-accent-foreground: #374151; /* Sidebar Accent Text */
+  --sidebar-border: #d1d5db; /* Sidebar Borders */
+  --sidebar-ring: rgba(21, 128, 61, 0.5); /* Sidebar Focus Ring */
+}
+
+.dark {
+  /* Updated dark mode colors to complement green theme */
+  --background: #0f172a; /* Dark background - slate-900 */
+  --foreground: #f8fafc; /* Light text - slate-50 */
+  --card: #1e293b; /* Dark card - slate-800 */
+  --card-foreground: #f8fafc; /* Light card text */
+  --popover: #1e293b; /* Dark popover */
+  --popover-foreground: #f8fafc; /* Light popover text */
+  --primary: #22c55e; /* Brighter green for dark mode - green-500 */
+  --primary-foreground: #0f172a; /* Dark text on primary */
+  --secondary: #84cc16; /* Keep accent lime */
+  --secondary-foreground: #0f172a; /* Dark text on secondary */
+  --muted: #334155; /* Muted dark - slate-700 */
+  --muted-foreground: #94a3b8; /* Muted light text - slate-400 */
+  --accent: #84cc16; /* Keep accent lime */
+  --accent-foreground: #0f172a; /* Dark text on accent */
+  --destructive: #f97316; /* Brighter orange for dark mode */
+  --destructive-foreground: #ffffff; /* White text on destructive */
+  --border: #334155; /* Dark border - slate-700 */
+  --input: #334155; /* Dark input - slate-700 */
+  --ring: rgba(34, 197, 94, 0.5); /* Green focus ring for dark mode */
+  --chart-1: #22c55e; /* Brighter green for charts */
+  --chart-2: #84cc16; /* Lime accent */
+  --chart-3: #f97316; /* Orange */
+  --chart-4: #6366f1; /* Indigo */
+  --chart-5: #fbbf24; /* Yellow */
+  --sidebar: #1e293b; /* Dark sidebar - slate-800 */
+  --sidebar-foreground: #f8fafc; /* Light sidebar text */
+  --sidebar-primary: #22c55e; /* Brighter green for sidebar */
+  --sidebar-primary-foreground: #0f172a; /* Dark text on sidebar primary */
+  --sidebar-accent: #84cc16; /* Lime accent */
+  --sidebar-accent-foreground: #0f172a; /* Dark text on sidebar accent */
+  --sidebar-border: #334155; /* Dark sidebar border */
+  --sidebar-ring: rgba(34, 197, 94, 0.5); /* Green focus ring */
+}
+
+@theme inline {
+  /* Updated font variables to use Montserrat and Open Sans from design brief */
+  --font-sans: "Open Sans", system-ui, sans-serif;
+  --font-heading: "Montserrat", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+}
+
+/* Added Google Fonts import for Montserrat and Open Sans */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=Open+Sans:wght@400;500;600&display=swap");
