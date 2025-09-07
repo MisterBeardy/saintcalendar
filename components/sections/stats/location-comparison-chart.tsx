@@ -1,23 +1,40 @@
 "use client"
 
-"use client"
-
 import { MapPin, Users, Beer, Trophy, TrendingUp } from "lucide-react"
-import { sampleLocations } from "@/data/sample-locations"
+import { useState, useEffect } from "react"
+import { Location } from "@/lib/generated/prisma"
 
 interface LocationComparisonChartProps {
   selectedLocation: string
 }
 
 export function LocationComparisonChart({ selectedLocation }: LocationComparisonChartProps) {
-  // Generate location stats from sample locations
-  const locationStats = sampleLocations
+  const [locations, setLocations] = useState<Location[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/locations')
+        const data = await response.json()
+        setLocations(data)
+      } catch (error) {
+        console.error('Error fetching locations:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLocations()
+  }, [])
+
+  // Generate location stats from fetched locations
+  const locationStats = locations
     .filter(loc => loc.isActive) // Only include active locations
     .map(location => ({
       location: location.displayName,
-      saints: Math.floor(Math.random() * 100) + 20, // Mock data
-      totalBeers: Math.floor(Math.random() * 200000) + 50000, // Mock data
-      milestones: Math.floor(Math.random() * 30) + 10, // Mock data
+      saints: location.saints?.length || 0,
+      totalBeers: location.saints?.reduce((sum, saint) => sum + (saint.totalBeers || 0), 0) || 0,
+      milestones: location.saints?.reduce((sum, saint) => sum + (saint.milestones?.length || 0), 0) || 0,
     }))
 
   const filteredLocationStats =
@@ -35,6 +52,22 @@ export function LocationComparisonChart({ selectedLocation }: LocationComparison
   const totalBeers = filteredLocationStats.reduce((sum, stat) => sum + stat.totalBeers, 0)
   const totalMilestones = filteredLocationStats.reduce((sum, stat) => sum + stat.milestones, 0)
   const avgBeersPerSaint = totalSaints > 0 ? Math.round(totalBeers / totalSaints) : 0
+
+  if (loading) {
+    return (
+      <div className="bg-card rounded-lg border p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-gradient-to-br from-green-500/10 to-green-600/20 rounded-lg">
+            <MapPin className="h-5 w-5 text-green-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-heading font-semibold">Saints by Location</h3>
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-card rounded-lg border p-6">

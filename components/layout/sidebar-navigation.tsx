@@ -1,9 +1,7 @@
 "use client"
-
-"use client"
-
 import type React from "react"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Calendar, Users, ImageIcon, BarChart3, Settings, ChevronDown, ChevronRight } from "lucide-react"
 
 interface SubMenuItem {
@@ -50,8 +48,7 @@ const navigationItems: NavigationItem[] = [
     description: "Sticker gallery",
     subItems: [
       { id: "stickers-gallery", label: "Gallery", description: "Browse stickers" },
-      { id: "stickers-search", label: "Search", description: "Find stickers" },
-      { id: "stickers-favorites", label: "Favorites", description: "Saved stickers" },
+      { id: "stickers-templates", label: "Templates", description: "Sticker templates" },
     ],
   },
   {
@@ -67,18 +64,19 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    id: "admin",
-    label: "Admin",
-    icon: Settings,
-    description: "Management tools",
-    subItems: [
-      { id: "admin-overview", label: "Overview", description: "Dashboard" },
-      { id: "admin-saints", label: "Saint Management", description: "Manage saints" },
-      { id: "admin-stickers", label: "Sticker Management", description: "Approve stickers" },
-      { id: "admin-locations", label: "Location Management", description: "Manage locations" },
-      { id: "admin-pending", label: "Pending Changes", description: "Review changes" },
-      { id: "admin-changelog", label: "Change Log", description: "Audit trail" },
-    ],
+     id: "admin",
+     label: "Admin",
+     icon: Settings,
+     description: "Management tools",
+     subItems: [
+       { id: "admin-overview", label: "Overview", description: "Dashboard" },
+       { id: "admin-saints", label: "Saint Management", description: "Manage saints" },
+       { id: "admin-stickers", label: "Sticker Management", description: "Approve stickers" },
+       { id: "admin-locations", label: "Location Management", description: "Manage locations" },
+       { id: "admin-pending", label: "Pending Changes", description: "Review changes" },
+       { id: "admin-changelog", label: "Change Log", description: "Audit trail" },
+       { id: "database-entries", label: "Database Management", description: "Manage database entries" },
+     ],
   },
 ]
 
@@ -93,22 +91,27 @@ export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNa
   // Auto-expand the section containing the active item
   useEffect(() => {
     const baseSection = activeSection.split('-')[0]
-    const sectionWithSubItems = navigationItems.find(item => 
-      item.id === baseSection && item.subItems
-    )
-    
+    const sectionWithSubItems = navigationItems.find((item) => item.id === baseSection && item.subItems)
+
     if (sectionWithSubItems) {
       setExpandedSections(new Set([baseSection]))
+      return
+    }
+
+    const parentContainingActive = navigationItems.find((item) =>
+      item.subItems?.some((sub) => sub.id === activeSection)
+    )
+
+    if (parentContainingActive) {
+      setExpandedSections(new Set([parentContainingActive.id]))
     } else {
       setExpandedSections(new Set())
     }
   }, [activeSection])
 
   const toggleSection = (sectionId: string) => {
-    const newExpanded = new Set(expandedSections)
-    if (newExpanded.has(sectionId)) {
-      newExpanded.delete(sectionId)
-    } else {
+    const newExpanded = new Set<string>()
+    if (!expandedSections.has(sectionId)) {
       newExpanded.add(sectionId)
     }
     setExpandedSections(newExpanded)
@@ -127,9 +130,10 @@ export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNa
       <div className="space-y-1">
         {navigationItems.map((item) => {
           const Icon = item.icon
-          const isActive = activeSection === item.id || (item.subItems && activeSection.startsWith(item.id))
-          const isExpanded = expandedSections.has(item.id)
           const hasSubItems = item.subItems && item.subItems.length > 0
+          const containsActiveSub = hasSubItems ? item.subItems!.some((s) => s.id === activeSection) : false
+          const isActive = activeSection === item.id || containsActiveSub || (item.subItems && activeSection.startsWith(item.id))
+          const isExpanded = expandedSections.has(item.id)
 
           return (
             <div key={item.id}>

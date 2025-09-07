@@ -1,69 +1,75 @@
 "use client"
-
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Users, Trophy, Award, Star, Crown } from "lucide-react"
 import { SaintSearch } from "./saint-search"
 import { SaintsList } from "./saints-list"
 import { SaintProfileModal } from "@/components/modals/saint-profile-modal"
 import type { Saint } from "@/types/saint-events"
-import { sampleSaints } from "@/data/sample-saints"
+import { Saint as PrismaSaint } from "@/lib/generated/prisma"
 
 interface SaintInformationSectionProps {
   selectedLocation: string
-  dataSource: "mock" | "database"
   activeSubSection?: string
 }
 
 export function SaintInformationSection({
   selectedLocation,
-  dataSource,
   activeSubSection,
 }: SaintInformationSectionProps) {
   const [searchTerm, setSearchTerm] = useState("")
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("")
   const [selectedSaint, setSelectedSaint] = useState<Saint | null>(null)
   const [isSaintModalOpen, setIsSaintModalOpen] = useState(false)
+  const [saints, setSaints] = useState<Saint[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSaints = async () => {
+      try {
+        const response = await fetch('/api/saints')
+        const data = await response.json()
+        const transformedSaints: Saint[] = data.map((saint: any) => ({
+          saintNumber: saint.saintNumber,
+          name: saint.name,
+          saintName: saint.saintName,
+          saintDate: saint.saintDate,
+          saintYear: saint.saintYear,
+          location: saint.location?.displayName || 'Unknown',
+          totalBeers: saint.totalBeers,
+          years: saint.years || [],
+          milestones: saint.milestones || []
+        }))
+        setSaints(transformedSaints)
+      } catch (error) {
+        console.error('Error fetching saints:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSaints()
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
 
   const handleSaintClick = (saint: Saint) => {
     setSelectedSaint(saint)
     setIsSaintModalOpen(true)
   }
 
-  if (dataSource === "database") {
-    return (
-      <div className="p-6">
-        <div className="bg-card rounded-lg border p-8 text-center">
-          <div className="mb-4">
-            <Users className="h-16 w-16 mx-auto text-muted-foreground/50" />
-          </div>
-          <h3 className="text-lg font-heading font-semibold mb-2">Database Mode Active</h3>
-          <p className="text-muted-foreground mb-4">
-            Saint information will be loaded from the database when API endpoints are implemented.
-          </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-center justify-center gap-2 text-yellow-800">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-              <span className="font-medium text-sm">Waiting for database integration</span>
-            </div>
-            <p className="text-xs text-yellow-700 mt-1">
-              Switch to Mock Data in Admin section to view sample saint profiles.
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   const getFilteredSaints = () => {
-    let saints = sampleSaints
+    let filteredSaints = saints
 
     // Filter by search term if provided
-    if (searchTerm) {
-      saints = saints.filter(
+    if (debouncedSearchTerm) {
+      filteredSaints = filteredSaints.filter(
         (saint) =>
-          saint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          saint.saintName.toLowerCase().includes(searchTerm.toLowerCase()),
+          saint.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+          saint.saintName.toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
       )
     }
 
@@ -71,7 +77,7 @@ export function SaintInformationSection({
     switch (activeSubSection) {
       case "saints-recent":
         // Show last 5 saints by sainted year (most recent first)
-        return saints.sort((a, b) => b.saintedYear - a.saintedYear).slice(0, 5)
+        return saints.sort((a, b) => b.saintYear - a.saintYear).slice(0, 5)
 
       case "saints-milestones":
         // Show saints with milestone achievements (2000+ beers)
@@ -138,7 +144,7 @@ export function SaintInformationSection({
               const Icon = tierInfo.icon
               return (
                 <div
-                  key={saint.id}
+                  key={saint.saintNumber}
                   className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
                   onClick={() => handleSaintClick(saint)}
                 >
@@ -193,7 +199,7 @@ export function SaintInformationSection({
             <SaintSearch searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
           )}
 
-          <SaintsList saints={filteredSaints} searchTerm={searchTerm} onSaintClick={handleSaintClick} />
+          <SaintsList saints={filteredSaints} searchTerm={searchTerm} debouncedSearchTerm={debouncedSearchTerm} onSaintClick={handleSaintClick} />
         </>
       )}
 

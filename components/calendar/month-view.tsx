@@ -2,10 +2,18 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar, Beer } from "lucide-react"
+import { EventDetailsModal } from "@/components/modals/event-details-modal"
+
+function parseYYYYMMDD(dateInt: number): Date {
+  const year = Math.floor(dateInt / 10000)
+  const month = Math.floor((dateInt % 10000) / 100) - 1
+  const day = dateInt % 100
+  return new Date(year, month, day)
+}
 
 interface SaintEvent {
   id: string
@@ -14,25 +22,73 @@ interface SaintEvent {
   location: string
   state: string
   beerCount: number
+  eventType: string
 }
 
-// Sample events data
-const sampleEvents: SaintEvent[] = [
-  {
-    id: "1",
-    name: "Saint Hop",
-    date: new Date(2024, 7, 10),
-    location: "Charlottesville",
-    state: "VA",
-    beerCount: 1247,
-  },
-  { id: "2", name: "Saint Malt", date: new Date(2024, 7, 22), location: "Nashville", state: "TN", beerCount: 892 },
-  { id: "3", name: "Saint Stout", date: new Date(2024, 7, 24), location: "Raleigh", state: "NC", beerCount: 1456 },
-  { id: "4", name: "Saint Ale", date: new Date(2024, 8, 5), location: "Richmond", state: "VA", beerCount: 2103 },
-]
+interface MonthViewProps {
+  events: SaintEvent[]
+  currentDate: Date
+  onDateChange?: (date: Date) => void
+}
 
-export function MonthView() {
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 7)) // August 2024
+export function MonthView({ events: propEvents, currentDate: propCurrentDate, onDateChange }: MonthViewProps) {
+    const initialDate = propCurrentDate || new Date()
+    console.log('[MonthView] Initial date set to:', initialDate.toISOString())
+    console.log('[MonthView] Current date is:', new Date().toISOString())
+    const [currentDate, setCurrentDate] = useState(initialDate)
+    const [events, setEvents] = useState<SaintEvent[]>([])
+    const [loading, setLoading] = useState(true)
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+    const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Fetch events from API when current date changes
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true)
+        // Calculate date range for current month view
+        const year = currentDate.getFullYear()
+        const month = currentDate.getMonth()
+        const firstDay = new Date(year, month, 1)
+        const lastDay = new Date(year, month + 1, 0)
+
+        // Format dates as YYYY-MM-DD for API
+        const startDateStr = firstDay.toISOString().split('T')[0]
+        const endDateStr = lastDay.toISOString().split('T')[0]
+
+        console.log(`[MonthView] Fetching events for month ${startDateStr} to ${endDateStr}`)
+
+        const response = await fetch(`/api/events?startDate=${startDateStr}&endDate=${endDateStr}`)
+        const data = await response.json()
+        console.log(`[MonthView] Received ${data.length} events from API for current month`)
+
+        const transformedEvents = data.map((event: any) => ({
+          id: event.id,
+          name: event.saint?.name || 'Unknown',
+          date: parseYYYYMMDD(event.date),
+          location: event.location?.displayName || 'Unknown',
+          state: event.location?.state || 'Unknown',
+          beerCount: event.beers || 0,
+          eventType: event.eventType || 'saint-day'
+        }))
+
+        console.log(`[MonthView] Transformed ${transformedEvents.length} events for display`)
+        setEvents(transformedEvents)
+      } catch (error) {
+        console.error('Error fetching events:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchEvents()
+  }, [currentDate])
+
+  // Update current date when prop changes
+  useEffect(() => {
+    if (propCurrentDate) {
+      setCurrentDate(propCurrentDate)
+    }
+  }, [propCurrentDate])
 
   const monthNames = [
     "January",
@@ -65,15 +121,27 @@ export function MonthView() {
   }
 
   const getEventsForDate = (date: Date) => {
-    return sampleEvents.filter((event) => event.date.toDateString() === date.toDateString())
+    const filteredEvents = events.filter((event) => event.date.toDateString() === date.toDateString())
+    if (filteredEvents.length > 0) {
+      console.log(`[MonthView] Found ${filteredEvents.length} events for ${date.toDateString()}`)
+    }
+    return filteredEvents
   }
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev)
       newDate.setMonth(prev.getMonth() + (direction === "next" ? 1 : -1))
+      if (onDateChange) {
+        onDateChange(newDate)
+      }
       return newDate
     })
+  }
+
+  const handleEventClick = (eventId: string) => {
+    setSelectedEventId(eventId)
+    setIsModalOpen(true)
   }
 
   return (
@@ -127,10 +195,16 @@ export function MonthView() {
                     {events.map((event) => (
                       <div
                         key={event.id}
-                        className="text-xs p-1 bg-primary/10 text-primary rounded truncate"
+                        className="text-xs p-1 bg-primary/10 text-primary rounded truncate cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1"
                         title={`${event.name} - ${event.location}, ${event.state} (${event.beerCount} beers)`}
+                        onClick={() => handleEventClick(event.id)}
                       >
-                        {event.name}
+                        {(event.eventType === 'milestone' || event.beerCount > 1000) ? (
+                          <Beer className="h-3 w-3 flex-shrink-0" />
+                        ) : (
+                          <Calendar className="h-3 w-3 flex-shrink-0" />
+                        )}
+                        <span className="truncate">{event.name}</span>
                       </div>
                     ))}
                   </div>
@@ -140,6 +214,12 @@ export function MonthView() {
           </div>
         </CardContent>
       </Card>
+
+      <EventDetailsModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        eventId={selectedEventId}
+      />
     </div>
   )
 }

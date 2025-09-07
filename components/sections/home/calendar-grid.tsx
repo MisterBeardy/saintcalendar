@@ -1,16 +1,15 @@
 "use client"
 
-"use client"
-
 import type { SaintEvent, MilestoneEvent } from "@/types/saint-events"
-import { sampleEvents } from "@/data/sample-events"
+import { Event } from "@/lib/generated/prisma"
 
 interface CalendarGridProps {
   currentDate: Date
-  onEventClick: (event: SaintEvent) => void
+  onEventClick: (event: any) => void
+  events: Event[]
 }
 
-export function CalendarGrid({ currentDate, onEventClick }: CalendarGridProps) {
+export function CalendarGrid({ currentDate, onEventClick, events }: CalendarGridProps) {
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
   const getDaysInMonth = (date: Date) => {
@@ -30,9 +29,11 @@ export function CalendarGrid({ currentDate, onEventClick }: CalendarGridProps) {
     )
   }
 
-  const getEventsForDay = (day: number) => {
-    return sampleEvents.filter((event) => {
-      if (event.date !== day) return false
+  const getEventsForDay = (events: Event[], day: number) => {
+    return events.filter((event) => {
+      // Extract day from YYYYMMDD format
+      const eventDay = event.date % 100
+      if (eventDay !== day) return false
 
       if (event.eventType === "saint-day") {
         return event.month === currentDate.getMonth() + 1
@@ -57,7 +58,7 @@ export function CalendarGrid({ currentDate, onEventClick }: CalendarGridProps) {
 
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const dayEvents = getEventsForDay(day)
+      const dayEvents = getEventsForDay(events, day)
       const today = isToday(day)
 
       days.push(

@@ -2,10 +2,11 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar, Beer } from "lucide-react"
+import { EventDetailsModal } from "@/components/modals/event-details-modal"
 
 interface SaintEvent {
   id: string
@@ -14,23 +15,64 @@ interface SaintEvent {
   location: string
   state: string
   beerCount: number
+  eventType: string
 }
 
-const sampleEvents: SaintEvent[] = [
-  {
-    id: "1",
-    name: "Saint Hop",
-    date: new Date(2024, 7, 20),
-    location: "Charlottesville",
-    state: "VA",
-    beerCount: 1247,
-  },
-  { id: "2", name: "Saint Malt", date: new Date(2024, 7, 22), location: "Nashville", state: "TN", beerCount: 892 },
-  { id: "3", name: "Saint Stout", date: new Date(2024, 7, 24), location: "Raleigh", state: "NC", beerCount: 1456 },
-]
-
 export function WeekView() {
-  const [currentWeek, setCurrentWeek] = useState(new Date(2024, 7, 18)) // Week of Aug 18-24
+    const initialWeek = new Date()
+    console.log('[WeekView] Initial week set to:', initialWeek.toISOString())
+    console.log('[WeekView] Current date is:', new Date().toISOString())
+    const [currentWeek, setCurrentWeek] = useState(initialWeek)
+    const [events, setEvents] = useState<SaintEvent[]>([])
+    const [loading, setLoading] = useState(true)
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+    const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const parseYYYYMMDD = (dateInt: number): Date => {
+    const year = Math.floor(dateInt / 10000)
+    const month = Math.floor((dateInt % 10000) / 100) - 1
+    const day = dateInt % 100
+    return new Date(year, month, day)
+  }
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        // Calculate date range for current week view
+        const weekDates = getWeekDates(currentWeek)
+        const weekStart = weekDates[0]
+        const weekEnd = weekDates[6]
+
+        // Format dates as YYYY-MM-DD for API
+        const startDateStr = weekStart.toISOString().split('T')[0]
+        const endDateStr = weekEnd.toISOString().split('T')[0]
+
+        console.log(`[WeekView] Fetching events for week ${startDateStr} to ${endDateStr}`)
+
+        const response = await fetch(`/api/events?startDate=${startDateStr}&endDate=${endDateStr}`)
+        const data = await response.json()
+        console.log(`[WeekView] Received ${data.length} events from API for current week`)
+
+        const transformedEvents = data.map((event: any) => ({
+          id: event.id,
+          name: event.saint?.name || 'Unknown',
+          date: parseYYYYMMDD(event.date),
+          location: event.location?.displayName || 'Unknown',
+          state: event.location?.state || 'Unknown',
+          beerCount: event.beers || 0,
+          eventType: event.eventType || 'saint-day'
+        }))
+
+        console.log(`[WeekView] Transformed ${transformedEvents.length} events for display`)
+        setEvents(transformedEvents)
+      } catch (error) {
+        console.error('Error fetching events:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchEvents()
+  }, [currentWeek])
 
   const getWeekDates = (startDate: Date) => {
     const dates = []
@@ -50,7 +92,7 @@ export function WeekView() {
   const weekEnd = weekDates[6]
 
   const getEventsForWeek = () => {
-    return sampleEvents.filter((event) => event.date >= weekStart && event.date <= weekEnd)
+    return events.filter((event) => event.date >= weekStart && event.date <= weekEnd)
   }
 
   const navigateWeek = (direction: "prev" | "next") => {
@@ -64,6 +106,11 @@ export function WeekView() {
   const formatDateRange = () => {
     const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" }
     return `${weekStart.toLocaleDateString("en-US", options)} - ${weekEnd.toLocaleDateString("en-US", options)}`
+  }
+
+  const handleEventClick = (eventId: string) => {
+    setSelectedEventId(eventId)
+    setIsModalOpen(true)
   }
 
   return (
@@ -106,9 +153,20 @@ export function WeekView() {
                   {getEventsForWeek()
                     .filter((event) => event.date.toDateString() === date.toDateString())
                     .map((event) => (
-                      <div key={event.id} className="text-xs p-2 bg-primary/10 text-primary rounded">
-                        <div className="font-medium">{event.name}</div>
-                        <div className="text-muted-foreground">
+                      <div
+                        key={event.id}
+                        className="text-xs p-2 bg-primary/10 text-primary rounded cursor-pointer hover:bg-primary/20 transition-colors"
+                        onClick={() => handleEventClick(event.id)}
+                      >
+                        <div className="flex items-center gap-1">
+                          {(event.eventType === 'milestone' || event.beerCount > 1000) ? (
+                            <Beer className="h-3 w-3 flex-shrink-0" />
+                          ) : (
+                            <Calendar className="h-3 w-3 flex-shrink-0" />
+                          )}
+                          <div className="font-medium">{event.name}</div>
+                        </div>
+                        <div className="text-muted-foreground ml-4">
                           {event.location}, {event.state}
                         </div>
                       </div>
@@ -128,13 +186,24 @@ export function WeekView() {
         <CardContent>
           <div className="space-y-3">
             {getEventsForWeek().map((event) => (
-              <div key={event.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                <div>
-                  <p className="font-medium">{event.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {event.date.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })} •{" "}
-                    {event.location}, {event.state}
-                  </p>
+              <div
+                key={event.id}
+                className="flex justify-between items-center p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                onClick={() => handleEventClick(event.id)}
+              >
+                <div className="flex items-center gap-2">
+                  {(event.eventType === 'milestone' || event.beerCount > 1000) ? (
+                    <Beer className="h-4 w-4 text-primary flex-shrink-0" />
+                  ) : (
+                    <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
+                  )}
+                  <div>
+                    <p className="font-medium">{event.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {event.date.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })} •{" "}
+                      {event.location}, {event.state}
+                    </p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium">{event.beerCount} beers</p>
@@ -144,6 +213,12 @@ export function WeekView() {
           </div>
         </CardContent>
       </Card>
+
+      <EventDetailsModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        eventId={selectedEventId}
+      />
     </div>
   )
 }

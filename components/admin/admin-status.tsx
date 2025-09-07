@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, AlertCircle, RefreshCw, Database, Users, Calendar } from "lucide-react"
+import { useState, useEffect } from "react"
 
 interface SystemStatus {
   service: string
@@ -22,46 +23,65 @@ interface SystemMetric {
   trend: "up" | "down" | "stable"
 }
 
+interface DatabaseStatus {
+  connectionStatus: string
+  tables: {
+    Saints: { recordCount: number; lastUpdated: string }
+    Events: { recordCount: number; lastUpdated: string }
+    Locations: { recordCount: number; lastUpdated: string }
+  }
+  database: {
+    version: string
+    size: string
+  }
+}
+
 const systemStatuses: SystemStatus[] = [
   {
     service: "Database",
     status: "online",
-    lastSync: "2 minutes ago",
-    description: "All database operations running normally",
+    lastSync: "Just now",
+    description: "Database connection active",
     icon: Database,
   },
-  {
-    service: "User Authentication",
-    status: "online",
-    lastSync: "1 minute ago",
-    description: "Authentication services operational",
-    icon: Users,
-  },
-  {
-    service: "Calendar Sync",
-    status: "warning",
-    lastSync: "15 minutes ago",
-    description: "Slight delay in calendar synchronization",
-    icon: Calendar,
-  },
 ]
 
-const systemMetrics: SystemMetric[] = [
-  { label: "Total Saints", value: 86, change: "+3", trend: "up" },
-  { label: "Active Users", value: 45, change: "+2", trend: "up" },
-  { label: "Pending Approvals", value: 7, change: "-1", trend: "down" },
-  { label: "System Uptime", value: "99.9%", change: "0%", trend: "stable" },
-]
-
-const recentActivity = [
-  { action: "Data sync completed", timestamp: "2 minutes ago", type: "success" },
-  { action: "3 new stickers approved", timestamp: "15 minutes ago", type: "info" },
-  { action: "User registration: beerfan42", timestamp: "1 hour ago", type: "info" },
-  { action: "Calendar sync warning resolved", timestamp: "2 hours ago", type: "warning" },
-  { action: "Database backup completed", timestamp: "6 hours ago", type: "success" },
-]
+const recentActivity: { action: string; timestamp: string; type: string }[] = []
 
 export function AdminStatus() {
+  const [dbStatus, setDbStatus] = useState<DatabaseStatus | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const fetchDatabaseStatus = async () => {
+    try {
+      const response = await fetch('/api/database/status')
+      if (response.ok) {
+        const data: DatabaseStatus = await response.json()
+        setDbStatus(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch database status:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDatabaseStatus()
+  }, [])
+
+  const systemMetrics: SystemMetric[] = dbStatus ? [
+    { label: "Total Saints", value: dbStatus.tables.Saints.recordCount, change: "0", trend: "stable" },
+    { label: "Total Events", value: dbStatus.tables.Events.recordCount, change: "0", trend: "stable" },
+    { label: "Total Locations", value: dbStatus.tables.Locations.recordCount, change: "0", trend: "stable" },
+    { label: "Database Size", value: dbStatus.database.size, change: "0%", trend: "stable" },
+  ] : [
+    { label: "Total Saints", value: 0, change: "0", trend: "stable" },
+    { label: "Total Events", value: 0, change: "0", trend: "stable" },
+    { label: "Total Locations", value: 0, change: "0", trend: "stable" },
+    { label: "Database Size", value: "N/A", change: "0%", trend: "stable" },
+  ]
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "online":
@@ -108,9 +128,9 @@ export function AdminStatus() {
           <h2 className="text-2xl font-bold">System Status</h2>
           <p className="text-muted-foreground">Monitor system health and integration status</p>
         </div>
-        <Button variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh Status
+        <Button variant="outline" size="sm" onClick={fetchDatabaseStatus} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? 'Refreshing...' : 'Refresh Status'}
         </Button>
       </div>
 

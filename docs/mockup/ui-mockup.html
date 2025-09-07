@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Import/Export Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f0fdf4;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .header {
+            background: #f0fdf4;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+            border: 1px solid #d1fae5;
+        }
+
+        .header h1 {
+            font-family: 'Montserrat', sans-serif;
+            color: #15803d;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f0fdf4;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 0;
+            border: 1px solid #d1fae5;
+            border-bottom: none;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .tab-button.active {
+            color: #15803d;
+            border-bottom-color: #15803d;
+        }
+
+        .tab-button:hover {
+            background-color: #dcfce7;
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 24px;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #d1fae5;
+            border-top: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-family: 'Open Sans', sans-serif;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1fae5;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f0fdf4;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #15803d;
+            box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .btn-primary {
+            background: #15803d;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #166534;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(21, 128, 61, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #84cc16;
+        }
+
+        .btn-secondary:hover {
+            background: #dcfce7;
+            border-color: #65a30d;
+        }
+
+        .preview-section {
+            margin-top: 24px;
+            padding: 24px;
+            background: #f0fdf4;
+            border-radius: 8px;
+            border: 1px solid #d1fae5;
+        }
+
+        .preview-section h3 {
+            font-family: 'Montserrat', sans-serif;
+            color: #15803d;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #d1fae5;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .preview-table th {
+            background: #dcfce7;
+            font-weight: 600;
+            color: #15803d;
+        }
+
+        .preview-table tbody tr:hover {
+            background-color: #f0fdf4;
+        }
+
+        .status-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .status-card {
+            background: #f0fdf4;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 1px solid #d1fae5;
+        }
+
+        .status-card h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 24px;
+            color: #15803d;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .status-card p {
+            color: #6b7280;
+            font-size: 14px;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #d1fae5;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #15803d;
+            width: 0%;
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                border-bottom: 1px solid #d1fae5;
+            }
+
+            .button-group {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .radio-group {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .status-cards {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .checkbox-group {
+                gap: 12px;
+            }
+
+            .preview-table th,
+            .preview-table td {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 16px;
+            }
+
+            .tab-content {
+                padding: 16px;
+            }
+
+            .preview-section {
+                padding: 16px;
+            }
+
+            .console {
+                padding: 16px;
+            }
+        }
+
+        .console {
+            margin-top: 24px;
+            background: #1f2937;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            color: #e5e7eb;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #374151;
+        }
+
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .console-title {
+            font-weight: 600;
+            color: #f9fafb;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .console-clear {
+            background: #374151;
+            color: #e5e7eb;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .console-clear:hover {
+            background: #4b5563;
+        }
+
+        .console-output {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .console-message {
+            margin-bottom: 6px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .console-message.success {
+            color: #22c55e;
+        }
+
+        .console-message.warning {
+            color: #d97706;
+        }
+
+        .console-message.error {
+            color: #ef4444;
+        }
+
+        .console-message.info {
+            color: #15803d;
+        }
+
+        .preview-tabs {
+            display: flex;
+            background: #dcfce7;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 0;
+            border: 1px solid #d1fae5;
+            border-bottom: none;
+        }
+
+        .preview-tab-button {
+            flex: 1;
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .preview-tab-button.active {
+            color: #15803d;
+            border-bottom-color: #15803d;
+            background: white;
+        }
+
+        .preview-tab-button:hover {
+            background-color: #bbf7d0;
+        }
+
+        .preview-tab-content {
+            display: none;
+            padding: 20px;
+            background: white;
+            border-radius: 0 0 8px 8px;
+            border: 1px solid #d1fae5;
+            border-top: none;
+        }
+
+        .preview-tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Database Management</h1>
+            <p>Google Sheets Import/Export</p>
+        </div>
+
+        <div class="status-cards">
+            <div class="status-card">
+                <h3>1,234</h3>
+                <p>Saints Records</p>
+            </div>
+            <div class="status-card">
+                <h3>567</h3>
+                <p>Historical Events</p>
+            </div>
+            <div class="status-card">
+                <h3>89</h3>
+                <p>Milestones</p>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('import')">Import</button>
+            <button class="tab-button" onclick="switchTab('export')">Export</button>
+        </div>
+
+        <div id="import-tab" class="tab-content active">
+            <div class="form-group">
+                <label for="spreadsheet-url">Google Sheets URL</label>
+                <input type="url" id="spreadsheet-url" placeholder="https://docs.google.com/spreadsheets/d/...">
+                <button class="btn btn-secondary" onclick="checkMasterSheet()" style="margin-top: 10px;">Check Master Sheet</button>
+            </div>
+
+            <div class="form-group">
+                <label>Data Types</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> Saints Data (1,234 records)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> Historical Data (567 records)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> Milestones (89 records)
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Locations</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> New York, NY (Active)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> Boston, MA (Active)
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox"> Chicago, IL (Inactive)
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="conflict-resolution">Conflict Resolution</label>
+                <select id="conflict-resolution">
+                    <option>Skip duplicates</option>
+                    <option>Overwrite existing</option>
+                    <option>Merge data</option>
+                </select>
+            </div>
+
+            <div class="preview-section">
+                <h3>Preview</h3>
+                <div class="preview-tabs">
+                    <button class="preview-tab-button active" onclick="switchPreviewTab('saints')">Saints</button>
+                    <button class="preview-tab-button" onclick="switchPreviewTab('historical')">Historical Data</button>
+                    <button class="preview-tab-button" onclick="switchPreviewTab('milestones')">Milestones</button>
+                </div>
+                <div id="saints-preview" class="preview-tab-content active">
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Feast Date</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>St. Patrick</td>
+                                <td>March 17</td>
+                                <td>New York, NY</td>
+                                <td>Active</td>
+                            </tr>
+                            <tr>
+                                <td>St. Nicholas</td>
+                                <td>December 6</td>
+                                <td>Boston, MA</td>
+                                <td>Active</td>
+                            </tr>
+                            <tr>
+                                <td>St. Francis</td>
+                                <td>October 4</td>
+                                <td>Chicago, IL</td>
+                                <td>Inactive</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="historical-preview" class="preview-tab-content">
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Event</th>
+                                <th>Date</th>
+                                <th>Location</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Church Dedication</td>
+                                <td>2023-05-15</td>
+                                <td>New York, NY</td>
+                                <td>Historical</td>
+                            </tr>
+                            <tr>
+                                <td>Saint Canonization</td>
+                                <td>2023-03-22</td>
+                                <td>Boston, MA</td>
+                                <td>Religious</td>
+                            </tr>
+                            <tr>
+                                <td>Community Event</td>
+                                <td>2023-07-10</td>
+                                <td>Chicago, IL</td>
+                                <td>Cultural</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="milestones-preview" class="preview-tab-content">
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Saint Number</th>
+                                <th>Count</th>
+                                <th>Date</th>
+                                <th>Sticker</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1234</td>
+                                <td>25</td>
+                                <td>2024-01-15</td>
+                                <td>Gold Star</td>
+                            </tr>
+                            <tr>
+                                <td>5678</td>
+                                <td>50</td>
+                                <td>2024-02-20</td>
+                                <td>Silver Medal</td>
+                            </tr>
+                            <tr>
+                                <td>9012</td>
+                                <td>100</td>
+                                <td>2024-03-10</td>
+                                <td>Bronze Badge</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="previewData()">Preview</button>
+                <button class="btn btn-primary" onclick="importData()">Import</button>
+                <button class="btn btn-secondary">Cancel</button>
+            </div>
+
+            <div class="button-group" id="locations-button-group" style="display: none;">
+                <button class="btn btn-primary" onclick="checkLocations()">Check Locations</button>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+
+            <div class="console">
+                <div class="console-header">
+                    <div class="console-title">Terminal Output</div>
+                    <button class="console-clear" onclick="clearConsole()">Clear</button>
+                </div>
+                <div class="console-output" id="console-output"></div>
+            </div>
+        </div>
+
+        <div id="export-tab" class="tab-content">
+            <div class="form-group">
+                <label for="export-url">Google Sheets URL</label>
+                <input type="url" id="export-url" placeholder="https://docs.google.com/spreadsheets/d/...">
+            </div>
+
+            <div class="form-group">
+                <label>Export Mode</label>
+                <div class="radio-group">
+                    <label class="radio-item">
+                        <input type="radio" name="export-mode" checked> Full Export
+                    </label>
+                    <label class="radio-item">
+                        <input type="radio" name="export-mode"> Incremental
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Data Types</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> Saints Data
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> Historical Data
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> Milestones
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Locations</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> New York, NY
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" checked> Boston, MA
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox"> Chicago, IL
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Sheet Destination</label>
+                <input type="text" placeholder="Sheet name (optional)">
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="previewExport()">Preview</button>
+                <button class="btn btn-primary" onclick="exportData()">Export</button>
+                <button class="btn btn-secondary">Cancel</button>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="export-progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-button');
+
+            tabs.forEach(tab => tab.classList.remove('active'));
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function switchPreviewTab(tabName) {
+            const tabs = document.querySelectorAll('.preview-tab-content');
+            const buttons = document.querySelectorAll('.preview-tab-button');
+
+            tabs.forEach(tab => tab.classList.remove('active'));
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabName + '-preview').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function previewData() {
+            const progress = document.getElementById('progress-fill');
+            progress.style.width = '50%';
+            setTimeout(() => {
+                progress.style.width = '100%';
+            }, 1000);
+        }
+
+        function importData() {
+            const progress = document.getElementById('progress-fill');
+            progress.style.width = '0%';
+            let width = 0;
+            const interval = setInterval(() => {
+                width += 10;
+                progress.style.width = width + '%';
+                if (width >= 100) {
+                    clearInterval(interval);
+                    alert('Import completed!');
+                }
+            }, 200);
+        }
+
+        function previewExport() {
+            alert('Export preview generated!');
+        }
+
+        function exportData() {
+            const progress = document.getElementById('export-progress-fill');
+            progress.style.width = '0%';
+            let width = 0;
+            const interval = setInterval(() => {
+                width += 10;
+                progress.style.width = width + '%';
+                if (width >= 100) {
+                    clearInterval(interval);
+                    alert('Export completed!');
+                }
+            }, 200);
+        }
+
+        let masterSheetChecked = false;
+
+        function logToConsole(message, type = 'info') {
+            const output = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `console-message ${type}`;
+            messageDiv.textContent = `[${timestamp}] ${message}`;
+            output.appendChild(messageDiv);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '';
+        }
+
+        function checkMasterSheet() {
+            const url = document.getElementById('spreadsheet-url').value;
+            if (!url) {
+                logToConsole('Error: Please enter a Google Sheets URL', 'error');
+                return;
+            }
+            logToConsole('Starting master sheet validation...', 'info');
+            setTimeout(() => logToConsole('Connecting to Google Sheets API...', 'info'), 500);
+            setTimeout(() => logToConsole('Validating sheet structure...', 'info'), 1000);
+            setTimeout(() => logToConsole('Found 3 location sheets: New York, Boston, Chicago', 'success'), 1500);
+            setTimeout(() => logToConsole('Validating milestone data structure...', 'info'), 1800);
+            setTimeout(() => logToConsole('Milestone validation complete - 89 milestone records found', 'success'), 2200);
+            setTimeout(() => logToConsole('Master sheet validation complete', 'success'), 2500);
+            setTimeout(() => {
+                document.getElementById('locations-button-group').style.display = 'flex';
+                masterSheetChecked = true;
+            }, 2500);
+        }
+
+        function checkLocations() {
+            if (!masterSheetChecked) {
+                logToConsole('Error: Please check master sheet first', 'error');
+                return;
+            }
+            logToConsole('Starting location validation...', 'info');
+            const locations = ['New York, NY', 'Boston, MA', 'Chicago, IL'];
+            locations.forEach((location, index) => {
+                setTimeout(() => {
+                    logToConsole(`Checking ${location} sheet...`, 'info');
+                    setTimeout(() => {
+                        if (location === 'Chicago, IL') {
+                            logToConsole(`Warning: ${location} sheet has missing data`, 'warning');
+                        } else {
+                            logToConsole(`${location} sheet validated successfully`, 'success');
+                        }
+                    }, 500);
+                    setTimeout(() => {
+                        logToConsole(`Validating milestones for ${location}...`, 'info');
+                        setTimeout(() => {
+                            if (location === 'New York, NY') {
+                                logToConsole(`${location}: 45 milestone records validated`, 'success');
+                            } else if (location === 'Boston, MA') {
+                                logToConsole(`${location}: 32 milestone records validated`, 'success');
+                            } else {
+                                logToConsole(`${location}: Warning - 12 milestone records have validation issues`, 'warning');
+                            }
+                        }, 300);
+                    }, 600);
+                }, index * 1500);
+            });
+            setTimeout(() => {
+                logToConsole('Location validation complete. 2/3 sheets valid', 'info');
+                logToConsole('Milestone validation complete. Total: 89 milestone records (77 valid, 12 with issues)', 'info');
+            }, locations.length * 1500 + 1000);
+        }
+    </script>
+</body>
+</html>

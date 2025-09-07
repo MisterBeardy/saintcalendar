@@ -23,50 +23,27 @@ interface StickerSubmission {
   notes?: string
 }
 
-const stickerSubmissions: StickerSubmission[] = [
-  {
-    id: "1",
-    saintName: "Saint Barley",
-    submittedBy: "beerfan42",
-    submissionDate: "2024-08-15",
-    status: "pending",
-    location: "Richmond",
-    state: "VA",
-    beerCount: 1156,
-    notes: "New saint celebration in Richmond area",
-  },
-  {
-    id: "2",
-    saintName: "Saint Wheat",
-    submittedBy: "hopmaster",
-    submissionDate: "2024-08-14",
-    status: "pending",
-    location: "Knoxville",
-    state: "TN",
-    beerCount: 892,
-  },
-  {
-    id: "3",
-    saintName: "Saint Hop",
-    submittedBy: "admin",
-    submissionDate: "2024-08-10",
-    status: "approved",
-    location: "Charlottesville",
-    state: "VA",
-    beerCount: 1247,
-  },
-  {
-    id: "4",
-    saintName: "Saint Reject",
-    submittedBy: "spammer",
-    submissionDate: "2024-08-09",
-    status: "rejected",
-    location: "Unknown",
-    state: "XX",
-    beerCount: 0,
-    notes: "Invalid submission - no verification",
-  },
-]
+// Fetch sticker submissions from database
+const [stickerSubmissions, setStickerSubmissions] = useState<StickerSubmission[]>([])
+const [loading, setLoading] = useState(true)
+
+useEffect(() => {
+  const fetchStickerSubmissions = async () => {
+    try {
+      const response = await fetch('/api/sticker-submissions')
+      if (response.ok) {
+        const data: StickerSubmission[] = await response.json()
+        setStickerSubmissions(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch sticker submissions:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  fetchStickerSubmissions()
+}, [])
 
 export function StickerManagement() {
   const [selectedSubmission, setSelectedSubmission] = useState<StickerSubmission | null>(null)

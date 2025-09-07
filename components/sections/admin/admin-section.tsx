@@ -1,8 +1,5 @@
 "use client"
-
-"use client"
-
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
   Users,
   ImageIcon,
@@ -34,16 +31,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import React from "react"
 
 interface AdminSectionProps {
   selectedLocation: string
-  dataSource: "mock" | "database"
-  setDataSource: (source: "mock" | "database") => void
   activeSubSection?: string
 }
 
-export function AdminSection({ selectedLocation, dataSource, setDataSource, activeSubSection }: AdminSectionProps) {
+export function AdminSection({ selectedLocation, activeSubSection }: AdminSectionProps) {
   const getTabFromSubSection = (subSection?: string) => {
     if (!subSection || subSection === "admin") return "overview"
     const tabMap: Record<string, string> = {
@@ -71,74 +65,27 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
 
-  const [changeLog] = useState([
-    {
-      id: 1,
-      timestamp: "2024-01-15 14:30:22",
-      user: "Admin User",
-      action: "Saint Updated",
-      target: "Kirby Welsko",
-      changes: "Updated total beers from 1800 to 2000",
-      section: "Saint Management",
-      status: "completed",
-      ipAddress: "192.168.1.100",
-    },
-    {
-      id: 2,
-      timestamp: "2024-01-15 13:45:10",
-      user: "Moderator",
-      action: "Sticker Approved",
-      target: "2000 Beer Milestone Sticker",
-      changes: "Approved sticker submission for Kirby",
-      section: "Sticker Management",
-      status: "completed",
-      ipAddress: "192.168.1.101",
-    },
-    {
-      id: 3,
-      timestamp: "2024-01-15 12:20:15",
-      user: "Admin User",
-      action: "Location Activated",
-      target: "VA - Harrisonburg Middle Bar",
-      changes: "Changed status from pending to active",
-      section: "Location Management",
-      status: "completed",
-      ipAddress: "192.168.1.100",
-    },
-    {
-      id: 4,
-      timestamp: "2024-01-15 11:15:33",
-      user: "Editor",
-      action: "Saint Created",
-      target: "New Saint - John Doe",
-      changes: "Created new saint profile with 1000 beers",
-      section: "Saint Management",
-      status: "pending_approval",
-      ipAddress: "192.168.1.102",
-    },
-    {
-      id: 5,
-      timestamp: "2024-01-15 10:30:45",
-      user: "Moderator",
-      action: "Sticker Rejected",
-      target: "Custom Design Sticker",
-      changes: "Rejected due to inappropriate content",
-      section: "Sticker Management",
-      status: "completed",
-      ipAddress: "192.168.1.101",
-    },
-    {
-      id: 6,
-      timestamp: "2024-01-14 16:45:20",
-      user: "Admin User",
-      action: "Data Import",
-      target: "Saints CSV File",
-      changes: "Imported 25 new saint records",
-      section: "Data Import",
-      status: "completed",
-      ipAddress: "192.168.1.100",
-    },
-  ])
+  // Fetch change log from database
+  const [changeLog, setChangeLog] = useState<any[]>([])
+  const [loadingChangeLog, setLoadingChangeLog] = useState(true)
+
+  useEffect(() => {
+    const fetchChangeLog = async () => {
+      try {
+        const response = await fetch('/api/changelog')
+        if (response.ok) {
+          const data = await response.json()
+          setChangeLog(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch change log:', error)
+      } finally {
+        setLoadingChangeLog(false)
+      }
+    }
+
+    fetchChangeLog()
+  }, [])
 
   const [newSaint, setNewSaint] = useState({
     name: "",
@@ -151,79 +98,48 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
     notes: "",
   })
 
-  const [pendingChanges, setPendingChanges] = useState([
-    {
-      id: 1,
-      saintId: 1,
-      saintName: "Kirby Welsko",
-      changeType: "edit",
-      changes: {
-        name: "Kirby J. Welsko",
-        location: "VA - Charlottesville",
-        notes: "Updated location and added middle initial",
-      },
-      submittedBy: "Admin User",
-      submittedDate: "2024-01-15",
-      status: "pending",
-      comments: [],
-    },
-    {
-      id: 2,
-      saintId: 2,
-      saintName: "Sarah Johnson",
-      changeType: "edit",
-      changes: {
-        totalBeers: 1600,
-        notes: "Updated beer count after recent milestone",
-      },
-      submittedBy: "Location Manager",
-      submittedDate: "2024-01-14",
-      status: "pending",
-      comments: [],
-    },
-  ])
+  // Fetch pending changes from database
+  const [pendingChanges, setPendingChanges] = useState<any[]>([])
+  const [loadingPendingChanges, setLoadingPendingChanges] = useState(true)
 
-  const [saints, setSaints] = useState([
-    {
-      id: 1,
-      name: "Kirby Welsko",
-      saintName: "Kirby",
-      saintDate: "4/9/2016",
-      location: "VA - Richmond",
-      status: "active",
-      email: "kirby@example.com",
-      phone: "(555) 123-4567",
-      totalBeers: 2000,
-      milestones: ["1000 Beers", "2000 Beers"],
-      notes: "Original saint, very active in community events",
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      saintName: "Sarah",
-      saintDate: "6/15/2017",
-      location: "VA - Norfolk",
-      status: "active",
-      email: "sarah@example.com",
-      phone: "(555) 234-5678",
-      totalBeers: 1500,
-      milestones: ["1000 Beers"],
-      notes: "Great community organizer",
-    },
-    {
-      id: 3,
-      name: "Mike Chen",
-      saintName: "Mike",
-      saintDate: "8/22/2018",
-      location: "NC - Charlotte",
-      status: "inactive",
-      email: "mike@example.com",
-      phone: "(555) 345-6789",
-      totalBeers: 1200,
-      milestones: ["1000 Beers"],
-      notes: "Moved to different location",
-    },
-  ])
+  useEffect(() => {
+    const fetchPendingChanges = async () => {
+      try {
+        const response = await fetch('/api/pending-changes')
+        if (response.ok) {
+          const data = await response.json()
+          setPendingChanges(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch pending changes:', error)
+      } finally {
+        setLoadingPendingChanges(false)
+      }
+    }
+
+    fetchPendingChanges()
+  }, [])
+
+  const [saints, setSaints] = useState<any[]>([])
+  const [loadingSaints, setLoadingSaints] = useState(true)
+
+  useEffect(() => {
+    const fetchSaints = async () => {
+      try {
+        const response = await fetch('/api/saints')
+        if (response.ok) {
+          const data = await response.json()
+          setSaints(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch saints:', error)
+      } finally {
+        setLoadingSaints(false)
+      }
+    }
+
+    fetchSaints()
+  }, [])
 
   const filteredSaints = saints.filter((saint) => {
     const matchesSearch =
@@ -298,16 +214,27 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
     setIsEditSaintOpen(true)
   }
 
-  const locations = [
-    { id: 1, name: "Richmond", state: "VA", status: "active", saintsCount: 45, lastActivity: "2024-01-15" },
-    { id: 2, name: "Norfolk", state: "VA", status: "active", saintsCount: 32, lastActivity: "2024-01-14" },
-    { id: 3, name: "Charlottesville", state: "VA", status: "pending", saintsCount: 0, lastActivity: "N/A" },
-    { id: 4, name: "Charlotte NoDa", state: "NC", status: "active", saintsCount: 28, lastActivity: "2024-01-13" },
-    { id: 5, name: "Greenville", state: "NC", status: "pending", saintsCount: 0, lastActivity: "N/A" },
-    { id: 6, name: "Harrisonburg", state: "VA", status: "active", saintsCount: 18, lastActivity: "2024-01-12" },
-    { id: 7, name: "Roanoke", state: "VA", status: "pending", saintsCount: 0, lastActivity: "N/A" },
-    { id: 8, name: "Chattanooga", state: "TN", status: "active", saintsCount: 22, lastActivity: "2024-01-11" },
-  ]
+  // Fetch locations from database
+  const [locations, setLocations] = useState<any[]>([])
+  const [loadingLocations, setLoadingLocations] = useState(true)
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/locations')
+        if (response.ok) {
+          const data = await response.json()
+          setLocations(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch locations:', error)
+      } finally {
+        setLoadingLocations(false)
+      }
+    }
+
+    fetchLocations()
+  }, [])
 
   const handleApprovePendingChange = (changeId: number) => {
     const change = pendingChanges.find((c) => c.id === changeId)
@@ -322,49 +249,67 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
     setPendingChanges(pendingChanges.map((c) => (c.id === changeId ? { ...c, status: "rejected" } : c)))
   }
 
-  const [overviewCards, setOverviewCards] = useState([
-    {
-      title: "Total Saints",
-      value: 247,
-      change: "+12 from last month",
-      icon: <Users className="h-4 w-4 text-muted-foreground" />,
-    },
-    {
-      title: "Active Locations",
-      value: 23,
-      change: "Across 8 states",
-      icon: <MapPin className="h-4 w-4 text-muted-foreground" />,
-    },
-    {
-      title: "Pending Stickers",
-      value: 8,
-      change: "Awaiting approval",
-      icon: <ImageIcon className="h-4 w-4 text-muted-foreground" />,
-    },
-    {
-      title: "Data Imports",
-      value: 156,
-      change: "This month",
-      icon: <Upload className="h-4 w-4 text-muted-foreground" />,
-    },
-  ])
+  // Fetch overview data from database
+  const [overviewData, setOverviewData] = useState({
+    totalSaints: 0,
+    activeLocations: 0,
+    pendingStickers: 0,
+    dataImports: 0
+  })
+  const [loadingOverview, setLoadingOverview] = useState(true)
 
-  const [pendingLocationChanges, setPendingLocationChanges] = useState([
-    {
-      id: 1,
-      locationId: 3,
-      locationName: "Charlottesville",
-      changeType: "edit",
-      changes: {
-        status: { from: "pending", to: "active" },
-        notes: { from: "", to: "Updated status and added notes" },
-      },
-      submittedBy: "Admin User",
-      submittedDate: "2024-01-15",
-      status: "pending",
-      comments: [],
-    },
-  ])
+  useEffect(() => {
+    const fetchOverviewData = async () => {
+      try {
+        const [saintsRes, locationsRes, stickersRes, importsRes] = await Promise.all([
+          fetch('/api/saints/count'),
+          fetch('/api/locations/count'),
+          fetch('/api/stickers/pending/count'),
+          fetch('/api/imports/count')
+        ])
+
+        const saintsData = saintsRes.ok ? await saintsRes.json() : { count: 0 }
+        const locationsData = locationsRes.ok ? await locationsRes.json() : { count: 0 }
+        const stickersData = stickersRes.ok ? await stickersRes.json() : { count: 0 }
+        const importsData = importsRes.ok ? await importsRes.json() : { count: 0 }
+
+        setOverviewData({
+          totalSaints: saintsData.count,
+          activeLocations: locationsData.count,
+          pendingStickers: stickersData.count,
+          dataImports: importsData.count
+        })
+      } catch (error) {
+        console.error('Failed to fetch overview data:', error)
+      } finally {
+        setLoadingOverview(false)
+      }
+    }
+
+    fetchOverviewData()
+  }, [])
+
+  // Fetch pending location changes from database
+  const [pendingLocationChanges, setPendingLocationChanges] = useState<any[]>([])
+  const [loadingPendingLocationChanges, setLoadingPendingLocationChanges] = useState(true)
+
+  useEffect(() => {
+    const fetchPendingLocationChanges = async () => {
+      try {
+        const response = await fetch('/api/pending-location-changes')
+        if (response.ok) {
+          const data = await response.json()
+          setPendingLocationChanges(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch pending location changes:', error)
+      } finally {
+        setLoadingPendingLocationChanges(false)
+      }
+    }
+
+    fetchPendingLocationChanges()
+  }, [])
 
   const renderOverview = activeTab === "overview"
   const renderSaintManagement = activeTab === "saints"
@@ -380,94 +325,6 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
         </div>
       </div>
 
-      <div className="mb-4 bg-card rounded-lg border p-3">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h4 className="font-heading font-semibold text-lg">Data Source Configuration</h4>
-            <p className="text-sm text-muted-foreground">Switch between mock data and database connections</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <span
-              className={`text-sm font-medium transition-colors ${dataSource === "mock" ? "text-primary" : "text-muted-foreground"}`}
-            >
-              Mock Data
-            </span>
-            <button
-              onClick={() => {
-                const newSource = dataSource === "mock" ? "database" : "mock"
-                setDataSource(newSource)
-              }}
-              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
-                dataSource === "database"
-                  ? "bg-primary shadow-lg"
-                  : "bg-muted-foreground/20 hover:bg-muted-foreground/30"
-              }`}
-            >
-              <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ease-in-out ${
-                  dataSource === "database" ? "translate-x-8" : "translate-x-1"
-                }`}
-              />
-            </button>
-            <span
-              className={`text-sm font-medium transition-colors ${dataSource === "database" ? "text-primary" : "text-muted-foreground"}`}
-            >
-              Database
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 mt-3">
-          <div
-            className={`p-2 rounded-lg border ${dataSource === "mock" ? "bg-primary/5 border-primary/20" : "bg-muted/30"}`}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`w-2 h-2 rounded-full ${dataSource === "mock" ? "bg-primary" : "bg-muted-foreground"}`} />
-              <span className="font-medium text-sm">Saints Data</span>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {dataSource === "mock" ? "Using sample saints data" : "Connected to database"}
-            </div>
-          </div>
-
-          <div
-            className={`p-2 rounded-lg border ${dataSource === "mock" ? "bg-primary/5 border-primary/20" : "bg-muted/30"}`}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`w-2 h-2 rounded-full ${dataSource === "mock" ? "bg-primary" : "bg-muted-foreground"}`} />
-              <span className="font-medium text-sm">Events Data</span>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {dataSource === "mock" ? "Using sample events data" : "Connected to database"}
-            </div>
-          </div>
-
-          <div
-            className={`p-2 rounded-lg border ${dataSource === "mock" ? "bg-primary/5 border-primary/20" : "bg-muted/30"}`}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`w-2 h-2 rounded-full ${dataSource === "mock" ? "bg-primary" : "bg-muted-foreground"}`} />
-              <span className="font-medium text-sm">Locations Data</span>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {dataSource === "mock" ? "Using sample locations data" : "Connected to database"}
-            </div>
-          </div>
-        </div>
-
-        {dataSource === "database" && (
-          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center gap-2 text-yellow-800">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-              <span className="font-medium text-sm">Database Integration Pending</span>
-            </div>
-            <p className="text-xs text-yellow-700 mt-1">
-              Database connections will be configured when API endpoints are implemented.
-            </p>
-          </div>
-        )}
-      </div>
-
       <div className="space-y-6">
         {renderOverview && (
           <div className="space-y-3">
@@ -478,8 +335,8 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">247</div>
-                  <p className="text-xs text-muted-foreground">+12 from last month</p>
+                  <div className="text-2xl font-bold">{loadingOverview ? '...' : overviewData.totalSaints}</div>
+                  <p className="text-xs text-muted-foreground">From database</p>
                 </CardContent>
               </Card>
               <Card>
@@ -488,8 +345,8 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">23</div>
-                  <p className="text-xs text-muted-foreground">Across 8 states</p>
+                  <div className="text-2xl font-bold">{loadingOverview ? '...' : overviewData.activeLocations}</div>
+                  <p className="text-xs text-muted-foreground">From database</p>
                 </CardContent>
               </Card>
               <Card>
@@ -498,8 +355,8 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
                   <ImageIcon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">8</div>
-                  <p className="text-xs text-muted-foreground">Awaiting approval</p>
+                  <div className="text-2xl font-bold">{loadingOverview ? '...' : overviewData.pendingStickers}</div>
+                  <p className="text-xs text-muted-foreground">From database</p>
                 </CardContent>
               </Card>
               <Card>
@@ -508,14 +365,13 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
                   <Upload className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">156</div>
-                  <p className="text-xs text-muted-foreground">This month</p>
+                  <div className="text-2xl font-bold">{loadingOverview ? '...' : overviewData.dataImports}</div>
+                  <p className="text-xs text-muted-foreground">From database</p>
                 </CardContent>
               </Card>
             </div>
           </div>
         )}
-
         {renderSaintManagement && (
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -573,10 +429,11 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
                           <SelectValue placeholder="Select location" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="VA - Richmond">VA - Richmond</SelectItem>
-                          <SelectItem value="VA - Norfolk">VA - Norfolk</SelectItem>
-                          <SelectItem value="NC - Charlotte">NC - Charlotte</SelectItem>
-                          <SelectItem value="TN - Chattanooga">TN - Chattanooga</SelectItem>
+                          {locations.map((location) => (
+                            <SelectItem key={location.id} value={`${location.state} - ${location.city}`}>
+                              {location.state} - {location.city}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -682,7 +539,7 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
             </div>
 
             <Dialog open={isViewSaintOpen} onOpenChange={setIsViewSaintOpen}>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-9xl">
                 <DialogHeader>
                   <DialogTitle className="flex items-center justify-between">
                     <span>Saint Details</span>
@@ -787,10 +644,11 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="VA - Richmond">VA - Richmond</SelectItem>
-                          <SelectItem value="VA - Norfolk">VA - Norfolk</SelectItem>
-                          <SelectItem value="NC - Charlotte">NC - Charlotte</SelectItem>
-                          <SelectItem value="TN - Chattanooga">TN - Chattanooga</SelectItem>
+                          {locations.map((location) => (
+                            <SelectItem key={location.id} value={`${location.state} - ${location.city}`}>
+                              {location.state} - {location.city}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -851,8 +709,8 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
                               change.status === "approved"
                                 ? "default"
                                 : change.status === "rejected"
-                                  ? "destructive"
-                                  : "secondary"
+                                ? "destructive"
+                                : "secondary"
                             }
                           >
                             {change.status}
@@ -1068,8 +926,8 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
                             log.status === "completed"
                               ? "bg-green-500"
                               : log.status === "pending_approval"
-                                ? "bg-yellow-500"
-                                : "bg-gray-500"
+                              ? "bg-yellow-500"
+                              : "bg-gray-500"
                           }`}
                         />
                         <div className="flex-1">
@@ -1084,8 +942,8 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
                                 log.status === "completed"
                                   ? "bg-green-100 text-green-800 border-green-200"
                                   : log.status === "pending_approval"
-                                    ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                                    : "bg-gray-100 text-gray-800 border-gray-200"
+                                  ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                  : "bg-gray-100 text-gray-800 border-gray-200"
                               }`}
                             >
                               {log.status.replace("_", " ")}
@@ -1117,3 +975,5 @@ export function AdminSection({ selectedLocation, dataSource, setDataSource, acti
     </div>
   )
 }
+
+

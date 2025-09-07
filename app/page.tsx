@@ -4,9 +4,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Calendar, Users, ImageIcon, BarChart3, Settings } from "lucide-react"
-import { getAllLocationOptions } from "@/data/sample-locations"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { AppHeader } from "@/components/layout/app-header"
 import { ContentRouter } from "@/components/layout/content-router"
@@ -29,9 +28,24 @@ const navigationItems: NavigationItem[] = [
 export default function SaintsCalendarApp() {
   const [activeSection, setActiveSection] = useState("home")
   const [selectedLocation, setSelectedLocation] = useState("All Locations")
-  const [dataSource, setDataSource] = useState<"mock" | "database">("mock")
+  const [dataSource, setDataSource] = useState<"mock" | "database">("database")
+  const [locations, setLocations] = useState<string[]>(["All Locations"])
 
-  const locations = getAllLocationOptions()
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/locations')
+        const data = await response.json()
+        const locationOptions = ["All Locations", ...data.map((loc: any) => loc.displayName)]
+        setLocations(locationOptions)
+      } catch (error) {
+        console.error('Error fetching locations:', error)
+        setLocations(["All Locations"])
+      }
+    }
+    fetchLocations()
+  }, [])
+
   const activeItem = navigationItems.find((item) => item.id === activeSection)
 
   // Get dynamic header information based on current view

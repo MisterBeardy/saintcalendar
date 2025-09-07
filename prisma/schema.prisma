@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Location {
+  id            String   @id
+  state         String
+  city          String
+  displayName   String
+  address       String
+  phoneNumber   String
+  sheetId       String
+  isActive      Boolean
+  managerEmail  String
+  opened        String?
+  exclude       String?
+  saints        Saint[]
+  events        Event[]
+  stickers      Sticker[]
+}
+
+model Saint {
+  id            String     @id @default(cuid())
+  saintNumber   String     @unique
+  name          String
+  saintName     String
+  saintDate     String
+  saintYear     Int
+  locationId    String?
+  location      Location?  @relation(fields: [locationId], references: [id])
+  totalBeers    Int
+  years         SaintYear[]
+  milestones    Milestone[]
+  events        Event[]
+  stickers      Sticker[]
+}
+
+model SaintYear {
+  id                  String     @id @default(cuid())
+  year                Int
+  burger              String
+  tapBeerList         String[]
+  canBottleBeerList   String[]
+  facebookEvent       String?
+  sticker             String?
+  saintId             String
+  saint               Saint      @relation(fields: [saintId], references: [id])
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  count       Int
+  date        String
+  sticker     String?
+  saintId     String
+  saint       Saint    @relation(fields: [saintId], references: [id])
+}
+
+model Event {
+  id                  String     @id @default(cuid())
+  date                Int
+  title               String
+  locationId          String?
+  location            Location?  @relation(fields: [locationId], references: [id])
+  beers               Int
+  saintNumber         String?
+  saintedYear         Int?
+  month               Int?
+  saintName           String
+  realName            String
+  sticker             String?
+  eventType           String
+  burgers             Int?
+  tapBeers            Int?
+  canBottleBeers      Int?
+  facebookEvent       String?
+  burger              String?
+  tapBeerList         String[]
+  canBottleBeerList   String[]
+  milestoneCount      Int?
+  year                Int?
+  saintId             String?
+  saint               Saint?     @relation(fields: [saintId], references: [id])
+}
+
+model Sticker {
+  id          String    @id @default(cuid())
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id])
+  saintId     String?
+  saint       Saint?    @relation(fields: [saintId], references: [id])
+  year        Int?
+  imageUrl    String?
+  type        String?
+}

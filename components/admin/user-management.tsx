@@ -21,58 +21,27 @@ interface UserAccount {
   submissionsCount: number
 }
 
-const userAccounts: UserAccount[] = [
-  {
-    id: "1",
-    username: "admin",
-    email: "admin@oneofus.beer",
-    role: "admin",
-    status: "active",
-    joinDate: "2024-01-01",
-    lastActive: "2 minutes ago",
-    submissionsCount: 15,
-  },
-  {
-    id: "2",
-    username: "beerfan42",
-    email: "beerfan42@email.com",
-    role: "user",
-    status: "active",
-    joinDate: "2024-03-15",
-    lastActive: "1 hour ago",
-    submissionsCount: 8,
-  },
-  {
-    id: "3",
-    username: "saint_hopper",
-    email: "hopper@email.com",
-    role: "user",
-    status: "active",
-    joinDate: "2024-05-20",
-    lastActive: "3 hours ago",
-    submissionsCount: 12,
-  },
-  {
-    id: "4",
-    username: "sticker_maker",
-    email: "maker@email.com",
-    role: "user",
-    status: "pending",
-    joinDate: "2024-08-15",
-    lastActive: "Never",
-    submissionsCount: 0,
-  },
-  {
-    id: "5",
-    username: "moderator1",
-    email: "mod1@oneofus.beer",
-    role: "moderator",
-    status: "active",
-    joinDate: "2024-02-10",
-    lastActive: "30 minutes ago",
-    submissionsCount: 5,
-  },
-]
+// Fetch user accounts from database
+const [userAccounts, setUserAccounts] = useState<UserAccount[]>([])
+const [loading, setLoading] = useState(true)
+
+useEffect(() => {
+  const fetchUserAccounts = async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const data: UserAccount[] = await response.json()
+        setUserAccounts(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch user accounts:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  fetchUserAccounts()
+}, [])
 
 export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("")

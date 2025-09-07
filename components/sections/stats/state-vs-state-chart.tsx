@@ -1,32 +1,65 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ChevronDown, Trophy, Users, Beer, MapPin, Zap } from "lucide-react"
-import { sampleLocations } from "@/data/sample-locations"
+import { Location } from "@/lib/generated/prisma"
 
 interface StateVsStateChartProps {
   selectedLocation?: string
   dataSource?: "mock" | "database"
 }
 
+type LocationWithRelations = Location & {
+  saints: any[]
+  events: any[]
+}
+
 export function StateVsStateChart({ selectedLocation, dataSource }: StateVsStateChartProps) {
   const [stateA, setStateA] = useState("VA")
   const [stateB, setStateB] = useState("NC")
+  const [locations, setLocations] = useState<LocationWithRelations[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Get unique states from sample locations
-  const availableStates = Array.from(new Set(sampleLocations.map(loc => loc.state))).sort()
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/locations')
+        const data = await response.json()
+        if (!Array.isArray(data)) {
+          console.error('Invalid data format from /api/locations');
+          setLocations([]);
+          setLoading(false);
+          return;
+        }
+        setLocations(data)
+      } catch (error) {
+        console.error('Error fetching locations:', error)
+        setLocations([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLocations()
+  }, [])
+
+  // Get unique states from fetched locations
+  const availableStates = Array.from(new Set(locations.map(loc => loc.state))).sort()
   
   // Debug logging
   console.log("StateVsStateChart - availableStates:", availableStates)
-  console.log("StateVsStateChart - sampleLocations count:", sampleLocations.length)
+  console.log("StateVsStateChart - locations count:", locations.length)
   console.log("StateVsStateChart - dataSource:", dataSource)
 
   const stateComparison = availableStates.map(state => {
-    const stateLocations = sampleLocations.filter(loc => loc.state === state)
-    const totalSaints = Math.floor(Math.random() * 200) + 50 // Mock data
-    const avgBeers = Math.floor(Math.random() * 1000) + 1500 // Mock data
+    const stateLocations = locations.filter(loc => loc.state === state)
+    const totalSaints = stateLocations.reduce((sum, loc) => sum + (loc.saints?.length || 0), 0)
+    const totalBeers = stateLocations.reduce((sum, loc) => {
+      if (!loc.saints || !Array.isArray(loc.saints)) return sum;
+      return sum + loc.saints.reduce((saintSum, saint) => saintSum + (saint.totalBeers || 0), 0);
+    }, 0)
+    const avgBeers = totalSaints > 0 ? Math.round(totalBeers / totalSaints) : 0
     
     return {
       state,
@@ -37,7 +70,12 @@ export function StateVsStateChart({ selectedLocation, dataSource }: StateVsState
   })
 
   const getStateData = (stateName: string) => {
-    return stateComparison.find((state) => state.state === stateName) || stateComparison[0]
+    const found = stateComparison.find((state) => state.state === stateName)
+    if (found) return found
+    if (stateComparison.length === 0) {
+      return { state: stateName, saints: 0, avgBeers: 0, locations: 0 }
+    }
+    return stateComparison[0]
   }
 
   const stateAData = getStateData(stateA)

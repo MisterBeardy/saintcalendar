@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -17,65 +18,44 @@ interface MilestoneProgress {
   recentGrowth: number
 }
 
-const sampleProgress: MilestoneProgress[] = [
-  {
-    saintId: "1",
-    saintName: "Saint Ale",
-    currentCount: 2103,
-    location: "Richmond",
-    state: "VA",
-    nextMilestone: 3000,
-    progressToNext: 70.1,
-    achievedMilestones: [1000, 2000],
-    recentGrowth: 12,
-  },
-  {
-    saintId: "2",
-    saintName: "Saint Porter",
-    currentCount: 1892,
-    location: "Charlotte",
-    state: "NC",
-    nextMilestone: 2000,
-    progressToNext: 94.6,
-    achievedMilestones: [1000],
-    recentGrowth: 8,
-  },
-  {
-    saintId: "3",
-    saintName: "Saint Stout",
-    currentCount: 1456,
-    location: "Raleigh",
-    state: "NC",
-    nextMilestone: 2000,
-    progressToNext: 72.8,
-    achievedMilestones: [1000],
-    recentGrowth: 15,
-  },
-  {
-    saintId: "4",
-    saintName: "Saint Hop",
-    currentCount: 1247,
-    location: "Charlottesville",
-    state: "VA",
-    nextMilestone: 2000,
-    progressToNext: 62.4,
-    achievedMilestones: [1000],
-    recentGrowth: 5,
-  },
-  {
-    saintId: "5",
-    saintName: "Saint Malt",
-    currentCount: 892,
-    location: "Nashville",
-    state: "TN",
-    nextMilestone: 1000,
-    progressToNext: 89.2,
-    achievedMilestones: [],
-    recentGrowth: 18,
-  },
-]
-
 export function MilestoneTracker() {
+  const [progress, setProgress] = useState<MilestoneProgress[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSaints = async () => {
+      try {
+        const response = await fetch('/api/saints')
+        const saints = await response.json()
+        const transformedProgress = saints.map((saint: any) => {
+          const totalBeers = saint.events?.reduce((sum: number, event: any) => sum + (event.beers || 0), 0) || 0
+          const nextMilestone = Math.ceil((totalBeers + 1) / 1000) * 1000
+          const progressToNext = ((totalBeers % 1000) / 1000) * 100
+          const achievedMilestones = []
+          for (let i = 1000; i <= totalBeers; i += 1000) {
+            achievedMilestones.push(i)
+          }
+          return {
+            saintId: saint.id,
+            saintName: saint.name,
+            currentCount: totalBeers,
+            location: saint.location?.displayName || 'Unknown',
+            state: saint.location?.state || 'Unknown',
+            nextMilestone,
+            progressToNext,
+            achievedMilestones,
+            recentGrowth: 0, // This would need historical data to calculate
+          }
+        })
+        setProgress(transformedProgress)
+      } catch (error) {
+        console.error('Error fetching saints:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSaints()
+  }, [])
   const getMilestoneColor = (milestone: number) => {
     switch (milestone) {
       case 1000:
@@ -108,13 +88,13 @@ export function MilestoneTracker() {
         <div className="flex gap-2">
           <Badge variant="outline" className="gap-1">
             <Trophy className="h-3 w-3" />
-            {sampleProgress.filter((s) => s.progressToNext >= 90).length} Near Milestone
+            {progress.filter((s) => s.progressToNext >= 90).length} Near Milestone
           </Badge>
         </div>
       </div>
 
       <div className="grid gap-4">
-        {sampleProgress.map((saint) => (
+        {progress.map((saint) => (
           <Card key={saint.saintId}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">

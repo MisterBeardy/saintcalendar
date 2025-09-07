@@ -5,15 +5,16 @@ import type { Saint } from "@/types/saint-events"
 interface SaintsListProps {
   saints: Saint[]
   searchTerm: string
+  debouncedSearchTerm: string
   onSaintClick: (saint: Saint) => void
 }
 
-export function SaintsList({ saints, searchTerm, onSaintClick }: SaintsListProps) {
+export function SaintsList({ saints, searchTerm, onSaintClick, debouncedSearchTerm }: SaintsListProps) {
   return (
     <div className="space-y-4">
-      <h4 className="font-heading font-semibold">{searchTerm ? "Search Results" : "Recent Saints"}</h4>
+      <h4 className="font-heading font-semibold">{searchTerm ? `Search Results (${saints.length})` : "Recent Saints"}</h4>
       <div className="grid gap-4">
-        {saints.slice(0, 5).map((saint) => (
+        {saints.map((saint) => (
           <button
             key={saint.saintNumber}
             onClick={() => onSaintClick(saint)}
@@ -42,6 +43,11 @@ export function SaintsList({ saints, searchTerm, onSaintClick }: SaintsListProps
           </button>
         ))}
       </div>
+      {saints.length === 0 && debouncedSearchTerm && (
+        <div className="text-center py-8 text-muted-foreground">
+          No results found for "{debouncedSearchTerm}"
+        </div>
+      )}
     </div>
   )
 }
