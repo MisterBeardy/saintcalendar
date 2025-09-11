@@ -52,7 +52,26 @@ export function TableView() {
         }
 
         const response = await fetch(url)
+        console.log(`[TableView] API response status: ${response.status}`)
+
+        if (!response.ok) {
+          console.error(`[TableView] API request failed with status ${response.status}`)
+          const errorData = await response.json()
+          console.error(`[TableView] Error response:`, errorData)
+          setEvents([])
+          return
+        }
+
         const data = await response.json()
+        console.log(`[TableView] Raw data received:`, data)
+        console.log(`[TableView] Data type: ${typeof data}, isArray: ${Array.isArray(data)}`)
+
+        if (!Array.isArray(data)) {
+          console.error(`[TableView] Expected array but got:`, data)
+          setEvents([])
+          return
+        }
+
         console.log(`[TableView] Received ${data.length} events from API`)
 
         // Transform the data to match the interface

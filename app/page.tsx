@@ -34,7 +34,26 @@ export default function SaintsCalendarApp() {
     const fetchLocations = async () => {
       try {
         const response = await fetch('/api/locations')
+        console.log(`[SaintsCalendarApp] Locations API response status: ${response.status}`)
+
+        if (!response.ok) {
+          console.error(`[SaintsCalendarApp] Locations API request failed with status ${response.status}`)
+          const errorData = await response.json()
+          console.error(`[SaintsCalendarApp] Error response:`, errorData)
+          setLocations(["All Locations"])
+          return
+        }
+
         const data = await response.json()
+        console.log(`[SaintsCalendarApp] Raw locations data:`, data)
+        console.log(`[SaintsCalendarApp] Data type: ${typeof data}, isArray: ${Array.isArray(data)}`)
+
+        if (!Array.isArray(data)) {
+          console.error(`[SaintsCalendarApp] Expected array but got:`, data)
+          setLocations(["All Locations"])
+          return
+        }
+
         const locationOptions = ["All Locations", ...data.map((loc: any) => loc.displayName)]
         setLocations(locationOptions)
       } catch (error) {

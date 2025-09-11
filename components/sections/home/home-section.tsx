@@ -126,11 +126,11 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
         viewMode={viewMode as "month" | "week"}
+        events={events}
+        loading={loading}
       />
 
       {renderCalendarView()}
-
-      <UpcomingEvents onEventClick={handleEventClick} currentDate={currentDate} events={events} />
 
       <SaintDayEventModal
         isOpen={isSaintDayModalOpen}

@@ -16,6 +16,7 @@ interface SaintEvent {
   state: string
   beerCount: number
   eventType: string
+  saintNumber: number | null
 }
 
 export function WeekView() {
@@ -50,7 +51,26 @@ export function WeekView() {
         console.log(`[WeekView] Fetching events for week ${startDateStr} to ${endDateStr}`)
 
         const response = await fetch(`/api/events?startDate=${startDateStr}&endDate=${endDateStr}`)
+        console.log(`[WeekView] API response status: ${response.status}`)
+
+        if (!response.ok) {
+          console.error(`[WeekView] API request failed with status ${response.status}`)
+          const errorData = await response.json()
+          console.error(`[WeekView] Error response:`, errorData)
+          setEvents([])
+          return
+        }
+
         const data = await response.json()
+        console.log(`[WeekView] Raw data received:`, data)
+        console.log(`[WeekView] Data type: ${typeof data}, isArray: ${Array.isArray(data)}`)
+
+        if (!Array.isArray(data)) {
+          console.error(`[WeekView] Expected array but got:`, data)
+          setEvents([])
+          return
+        }
+
         console.log(`[WeekView] Received ${data.length} events from API for current week`)
 
         const transformedEvents = data.map((event: any) => ({
@@ -60,7 +80,8 @@ export function WeekView() {
           location: event.location?.displayName || 'Unknown',
           state: event.location?.state || 'Unknown',
           beerCount: event.beers || 0,
-          eventType: event.eventType || 'saint-day'
+          eventType: event.eventType || 'saint-day',
+          saintNumber: event.saint?.saintNumber || null
         }))
 
         console.log(`[WeekView] Transformed ${transformedEvents.length} events for display`)
@@ -164,7 +185,7 @@ export function WeekView() {
                           ) : (
                             <Calendar className="h-3 w-3 flex-shrink-0" />
                           )}
-                          <div className="font-medium">{event.name}</div>
+                          <div className="font-medium">{event.name}{event.saintNumber && <span className="text-xs text-muted-foreground ml-1">#{event.saintNumber}</span>}</div>
                         </div>
                         <div className="text-muted-foreground ml-4">
                           {event.location}, {event.state}
@@ -198,7 +219,7 @@ export function WeekView() {
                     <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
                   )}
                   <div>
-                    <p className="font-medium">{event.name}</p>
+                    <p className="font-medium">{event.name}{event.saintNumber && <span className="text-xs text-muted-foreground ml-1">#{event.saintNumber}</span>}</p>
                     <p className="text-sm text-muted-foreground">
                       {event.date.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })} •{" "}
                       {event.location}, {event.state}

@@ -28,7 +28,26 @@ export function SaintInformationSection({
     const fetchSaints = async () => {
       try {
         const response = await fetch('/api/saints')
+        console.log(`[SaintInformationSection] API response status: ${response.status}`)
+
+        if (!response.ok) {
+          console.error(`[SaintInformationSection] API request failed with status ${response.status}`)
+          const errorData = await response.json()
+          console.error(`[SaintInformationSection] Error response:`, errorData)
+          setSaints([])
+          return
+        }
+
         const data = await response.json()
+        console.log(`[SaintInformationSection] Raw data received:`, data)
+        console.log(`[SaintInformationSection] Data type: ${typeof data}, isArray: ${Array.isArray(data)}`)
+
+        if (!Array.isArray(data)) {
+          console.error(`[SaintInformationSection] Expected array but got:`, data)
+          setSaints([])
+          return
+        }
+
         const transformedSaints: Saint[] = data.map((saint: any) => ({
           saintNumber: saint.saintNumber,
           name: saint.name,

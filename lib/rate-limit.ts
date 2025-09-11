@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
 const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
-const MAX_REQUESTS = 100 // requests per window
+const MAX_REQUESTS = 500 // requests per window (increased for internal testing)
 
 export function rateLimit(request: NextRequest): NextResponse | null {
   const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'

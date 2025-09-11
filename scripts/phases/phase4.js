@@ -385,14 +385,21 @@ async function importHistoricalData(processedData, progressTracker, dbService = 
         const importedHistorical = await dbService.createSaintYear(historicalDataToImport);
 
         // Create event record
+        // Convert date to YYYYMMDD format to match API expectations
+        const eventDate = new Date(record.eventDate);
+        const year = eventDate.getFullYear();
+        const month = eventDate.getMonth() + 1;
+        const day = eventDate.getDate();
+        const dateInt = year * 10000 + month * 100 + day;
+
         const eventDataToImport = {
-          date: Math.floor(new Date(record.eventDate).getTime() / 1000), // Unix timestamp
+          date: dateInt, // YYYYMMDD format
           title: `${record.saintName} ${record.historicalYear}`,
           locationId: location.id,
           beers: (historicalDataToImport.tapBeerList.length + historicalDataToImport.canBottleBeerList.length),
           saintNumber: record.saintNumber,
           saintedYear: parseInt(record.historicalYear),
-          month: new Date(record.eventDate).getMonth() + 1,
+          month: month,
           saintName: record.saintName,
           realName: record.realName,
           sticker: record.sticker,

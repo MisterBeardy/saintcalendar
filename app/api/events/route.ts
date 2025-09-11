@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       });
 
       console.log(`[API/Events] Retrieved ${events.length} events`);
-
+      console.log(`[API/Events] First few events:`, events.slice(0, 3));
 
       return NextResponse.json(events);
     }

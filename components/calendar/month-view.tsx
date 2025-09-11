@@ -23,6 +23,7 @@ interface SaintEvent {
   state: string
   beerCount: number
   eventType: string
+  saintNumber: number | null
 }
 
 interface MonthViewProps {
@@ -59,18 +60,38 @@ export function MonthView({ events: propEvents, currentDate: propCurrentDate, on
         console.log(`[MonthView] Fetching events for month ${startDateStr} to ${endDateStr}`)
 
         const response = await fetch(`/api/events?startDate=${startDateStr}&endDate=${endDateStr}`)
+        console.log(`[MonthView] API response status: ${response.status}`)
+
+        if (!response.ok) {
+          console.error(`[MonthView] API request failed with status ${response.status}`)
+          const errorData = await response.json()
+          console.error(`[MonthView] Error response:`, errorData)
+          setEvents([])
+          return
+        }
+
         const data = await response.json()
+        console.log(`[MonthView] Raw data received:`, data)
+        console.log(`[MonthView] Data type: ${typeof data}, isArray: ${Array.isArray(data)}`)
+
+        if (!Array.isArray(data)) {
+          console.error(`[MonthView] Expected array but got:`, data)
+          setEvents([])
+          return
+        }
+
         console.log(`[MonthView] Received ${data.length} events from API for current month`)
 
-        const transformedEvents = data.map((event: any) => ({
+        const transformedEvents = Array.isArray(data) ? data.map((event: any) => ({
           id: event.id,
           name: event.saint?.name || 'Unknown',
           date: parseYYYYMMDD(event.date),
           location: event.location?.displayName || 'Unknown',
           state: event.location?.state || 'Unknown',
           beerCount: event.beers || 0,
-          eventType: event.eventType || 'saint-day'
-        }))
+          eventType: event.eventType || 'saint-day',
+          saintNumber: event.saint?.saintNumber || null
+        })) : []
 
         console.log(`[MonthView] Transformed ${transformedEvents.length} events for display`)
         setEvents(transformedEvents)
@@ -196,7 +217,7 @@ export function MonthView({ events: propEvents, currentDate: propCurrentDate, on
                       <div
                         key={event.id}
                         className="text-xs p-1 bg-primary/10 text-primary rounded truncate cursor-pointer hover:bg-primary/20 transition-colors flex items-center gap-1"
-                        title={`${event.name} - ${event.location}, ${event.state} (${event.beerCount} beers)`}
+                        title={`${event.name}${event.saintNumber ? ` #${event.saintNumber}` : ''} - ${event.location}, ${event.state} (${event.beerCount} beers)`}
                         onClick={() => handleEventClick(event.id)}
                       >
                         {(event.eventType === 'milestone' || event.beerCount > 1000) ? (
@@ -204,7 +225,7 @@ export function MonthView({ events: propEvents, currentDate: propCurrentDate, on
                         ) : (
                           <Calendar className="h-3 w-3 flex-shrink-0" />
                         )}
-                        <span className="truncate">{event.name}</span>
+                        <span className="truncate">{event.name}{event.saintNumber && <span className="text-xs text-muted-foreground ml-1">#{event.saintNumber}</span>}</span>
                       </div>
                     ))}
                   </div>

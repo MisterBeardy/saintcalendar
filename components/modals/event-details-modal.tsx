@@ -2,14 +2,21 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Beer, User } from "lucide-react"
+import { Calendar, MapPin, Beer, User, UtensilsCrossed } from "lucide-react"
 import { useState, useEffect } from "react"
+
+interface Beer {
+  name: string
+  type: 'tap' | 'can'
+  brewery?: string
+  description?: string
+}
 
 interface EventDetails {
   id: string
   title: string
   date: number
-  beers: number
+  beers: Beer[]
   eventType: string
   saintNumber?: string
   saintedYear?: number
@@ -19,6 +26,7 @@ interface EventDetails {
   sticker?: string
   burger?: string
   burgers?: number
+  burgerToppings?: string[]
   facebookEvent?: string
   location?: {
     displayName: string
@@ -32,6 +40,7 @@ interface EventDetails {
   tapBeerList?: string[]
   canBottleBeerList?: string[]
   milestoneCount?: number
+  year?: number
 }
 
 interface EventDetailsModalProps {
@@ -93,175 +102,221 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" aria-describedby="event-description">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+      <DialogContent className="max-w-lg sm:max-w-md md:max-w-4xl bg-gradient-to-br from-white to-gray-50 border-0 shadow-2xl rounded-2xl mx-4" aria-describedby="event-description">
+        <DialogHeader className="pb-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl -m-6 mb-6 p-6">
+          <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-gray-800">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Calendar className="h-6 w-6 text-blue-600" />
+            </div>
             Event Details
           </DialogTitle>
-          <DialogDescription id="event-description">
+          <DialogDescription id="event-description" className="text-gray-600 mt-2">
             Detailed information about the selected event including date, location, and associated data.
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-muted-foreground">Loading event details...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-pulse flex space-x-4">
+              <div className="rounded-full bg-gray-200 h-8 w-8"></div>
+              <div className="flex-1 space-y-2 py-1">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
           </div>
         ) : event ? (
-          <div className="space-y-4">
-            {/* Event Title */}
-            <div>
-              <h3 className="font-semibold text-lg">
-                {event.title.replace(/^Generated Feast of\s+/i, '')}
-              </h3>
-              <div className="flex gap-2 mt-1">
-                <Badge variant="secondary">
-                  {event.eventType === 'saint-day' ? 'Saint Day' : 'Milestone'}
-                </Badge>
-                {isHistoricalEvent(event.date) && (
-                  <Badge variant="outline" className="border-amber-500 text-amber-700 bg-amber-50">
-                    Historical
-                  </Badge>
+          <div className="flex flex-wrap gap-2">
+            {/* Group Saint and Date cards */}
+            <div className="flex gap-2 w-full">
+              {/* Saint Information Card */}
+              <section className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1" aria-labelledby="event-title">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                      #{event.saintNumber}
+                    </div>
+                    <div>
+                      <div className="font-medium">{event.saintName || event.saint?.name}</div>
+                      <div className="text-sm text-muted-foreground">{event.realName}</div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {event.location ? `${event.location.displayName}, ${event.location.state}` : 'Unknown'} • Sainted: {event.saintedYear}
+                  </div>
+                  {event.saintNumber && <div className="text-sm text-muted-foreground">#{event.saintNumber}</div>}
+                </div>
+                <div className="text-right">
+                  <div className="font-medium text-primary">{event.beers.length} beers</div>
+                  <div className="text-xs text-muted-foreground">{event.milestoneCount || 0} milestones</div>
+                </div>
+              </div>
+            </section>
+
+            {/* Date Card */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-800">Milestone/Event Date</div>
+                  <div className="font-medium text-lg text-gray-800">{formatDate(event.date)}</div>
+                </div>
+              </div>
+            </div>
+            </div> {/* End Saint and Date group */}
+
+            {/* Group Burger and Beer cards */}
+            <div className="flex gap-2 w-full">
+              {/* Burger Information Card */}
+              <section className="bg-gradient-to-r from-green-50 to-lime-50 p-4 rounded-xl border border-green-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <UtensilsCrossed className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="font-semibold text-gray-800">Burger Information</div>
+              </div>
+              <div className="space-y-3">
+                {event.burgers && event.burger ? (
+                  <div>
+                    <div className="font-medium text-sm text-gray-700 mb-2">
+                      {event.burger}{event.burgers ? ` (${event.burgers})` : ''}
+                    </div>
+                    {(() => {
+                      let toppings: string[] = [];
+                      if (event.burgerToppings && event.burgerToppings.length > 0) {
+                        toppings = event.burgerToppings;
+                      } else if (event.burger && event.burger.includes(':')) {
+                        const parts = event.burger.split(':');
+                        if (parts.length > 1) {
+                          toppings = parts[1].split(',').map(t => t.trim());
+                        }
+                      }
+                      if (toppings.length > 0) {
+                        return (
+                          <ul className="space-y-1">
+                            {toppings.map((topping, index) => (
+                              <li key={index} className="text-sm text-gray-600">• {topping}</li>
+                            ))}
+                          </ul>
+                        );
+                      } else {
+                        return <div className="text-sm text-gray-600">No toppings specified</div>;
+                      }
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-600">No burger information available</div>
                 )}
               </div>
-            </div>
+            </section>
 
-            {/* Date */}
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>{formatDate(event.date)}</span>
-            </div>
-
-            {/* Location */}
-            {event.location && (
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{event.location.displayName}, {event.location.state}</span>
+            {/* Beer Information Card */}
+            <section className="bg-gradient-to-r from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Beer className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="font-semibold text-gray-800">Beer Information</div>
               </div>
-            )}
+              <div className="space-y-3">
+                {event.tapBeerList && event.tapBeerList.length > 0 && (
+                  <div>
+                    <div className="font-medium text-sm text-gray-700 mb-2">
+                      Tap Beers{event.tapBeers ? ` (${event.tapBeers})` : ''}
+                    </div>
+                    <ul className="space-y-1">
+                      {event.tapBeerList.map((beer, index) => (
+                        <li key={index} className="text-sm text-gray-600">• {beer}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {event.canBottleBeerList && event.canBottleBeerList.length > 0 && (
+                  <div>
+                    <div className="font-medium text-sm text-gray-700 mb-2">
+                      Can/Bottle Beers{event.canBottleBeers ? ` (${event.canBottleBeers})` : ''}
+                    </div>
+                    <ul className="space-y-1">
+                      {event.canBottleBeerList.map((beer, index) => (
+                        <li key={index} className="text-sm text-gray-600">• {beer}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {(!event.tapBeerList || event.tapBeerList.length === 0) && (!event.canBottleBeerList || event.canBottleBeerList.length === 0) && (
+                  <div className="text-sm text-gray-600">No beer information available</div>
+                )}
+              </div>
+            </section>
+            </div> {/* End Burger and Beer group */}
 
-            {/* Saint Information */}
-            {(event.saintName || event.saint?.name) && (
-              <div className="flex items-start gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
-                  <div className="font-medium">{event.saintName || event.saint?.name}</div>
-                  {event.realName && (
-                    <div className="text-muted-foreground">Real name: {event.realName}</div>
-                  )}
-                  {event.saintNumber && (
-                    <div className="text-muted-foreground">Saint #{event.saintNumber}</div>
-                  )}
-                  {event.saintedYear && (
-                    <div className="text-muted-foreground">Sainted: {event.saintedYear}</div>
-                  )}
+            {/* Location Card */}
+            {event.location && (
+              <div className="bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100 shadow-sm hover:shadow-md transition-shadow duration-200 w-1/2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <MapPin className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-800">Location</div>
+                    <div className="text-sm text-gray-600">{event.location.displayName}, {event.location.state}</div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Beers/Milestone Display */}
-            {event.eventType === 'milestone' && (event.milestoneCount > 0 || event.beers > 0) ? (
-              <div className="flex items-center gap-2 text-sm">
-                <Beer className="h-4 w-4 text-muted-foreground" />
-                <span>{event.milestoneCount > 0 ? event.milestoneCount : event.beers} beers (Milestone)</span>
-              </div>
-            ) : event.eventType === 'saint-day' && (event.tapBeers || event.canBottleBeers) ? (
-              <div className="space-y-2">
-                {event.tapBeers && event.tapBeers > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Beer className="h-4 w-4 text-muted-foreground" />
-                    <span>{event.tapBeers} beers on tap</span>
-                  </div>
-                )}
-                {event.canBottleBeers && event.canBottleBeers > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Beer className="h-4 w-4 text-muted-foreground" />
-                    <span>{event.canBottleBeers} beers in cans/bottles</span>
-                  </div>
-                )}
-              </div>
-            ) : event.beers > 0 ? (
-              <div className="flex items-center gap-2 text-sm">
-                <Beer className="h-4 w-4 text-muted-foreground" />
-                <span>{event.beers} beers</span>
-              </div>
-            ) : null}
+            
 
-            {/* Sticker */}
-            {event.sticker && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Sticker: </span>
-                <span className="font-medium">{event.sticker}</span>
-              </div>
-            )}
+            
 
-            {/* Burger */}
-            {(event.burger || (event.burgers && event.burgers !== 0 && event.burgers !== '00')) && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Burger: </span>
-                <span className="font-medium">
-                  {event.burger || `${event.burgers} burgers`}
-                </span>
-              </div>
-            )}
-
-            {/* Facebook Event */}
-            {event.facebookEvent && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Facebook Event: </span>
-                <span className="font-medium">
-                  {event.facebookEvent.startsWith('http') ? (
-                    <a
-                      href={event.facebookEvent}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {event.facebookEvent}
-                    </a>
-                  ) : (
-                    event.facebookEvent
+            {/* Additional Details Card */}
+            {(event.sticker || event.facebookEvent || event.year) && (
+              <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 w-1/2">
+                <div className="font-semibold text-gray-800 mb-3">Additional Details</div>
+                <div className="space-y-2 text-sm">
+                  {event.sticker && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Sticker:</span>
+                      <span className="font-medium text-gray-800">{event.sticker}</span>
+                    </div>
                   )}
-                </span>
-              </div>
-            )}
-
-            {/* Year */}
-            {event.year && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Year: </span>
-                <span className="font-medium">{event.year}</span>
-              </div>
-            )}
-
-            {/* Tap Beer List */}
-            {event.tapBeerList && event.tapBeerList.length > 0 && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Tap Beers: </span>
-                <span className="font-medium">{event.tapBeerList.join(', ')}</span>
-              </div>
-            )}
-
-            {/* Can/Bottle Beer List */}
-            {event.canBottleBeerList && event.canBottleBeerList.length > 0 && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Can/Bottle Beers: </span>
-                <span className="font-medium">{event.canBottleBeerList.join(', ')}</span>
-              </div>
-            )}
-
-            {/* Burgers Count (if different from burger string) */}
-            {event.burgers && event.burgers !== 0 && !event.burger && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">Burgers: </span>
-                <span className="font-medium">{event.burgers}</span>
+                  {event.facebookEvent && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Facebook Event:</span>
+                      <span className="font-medium text-gray-800">
+                        {event.facebookEvent.startsWith('http') ? (
+                          <a
+                            href={event.facebookEvent}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline transition-colors focus:ring-2 focus:ring-blue-300 rounded px-1"
+                            aria-label="Open Facebook event in new tab"
+                          >
+                            Link
+                          </a>
+                        ) : (
+                          event.facebookEvent
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {event.year && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Year:</span>
+                      <span className="font-medium text-gray-800">{event.year}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="text-center py-8 text-sm text-muted-foreground">
-            Event details not found
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-lg mb-2">📅</div>
+            <div className="text-sm text-gray-500">Event details not found</div>
           </div>
         )}
       </DialogContent>
