@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-09-11T15:15:10.110Z",
+  "summary": {
+    "totalLocations": 26,
+    "validLocations": 26,
+    "invalidLocations": 0,
+    "totalSaints": 76,
+    "validSaints": 76,
+    "totalHistorical": 388,
+    "validHistorical": 388,
+    "totalMilestones": 5,
+    "validMilestones": 5
+  },
+  "details": {
+    "locationErrors": [],
+    "saintErrors": [],
+    "historicalErrors": [],
+    "milestoneErrors": [],
+    "crossReferenceErrors": []
+  },
+  "metadata": {
+    "totalErrors": 0,
+    "totalWarnings": 0
+  }
+}

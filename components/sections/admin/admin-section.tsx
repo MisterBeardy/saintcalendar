@@ -15,6 +15,7 @@ import {
   Filter,
   Activity,
   Clock,
+  Database,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,6 +32,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { Phase4ImportPanel } from "@/components/admin/phase4-import-panel"
 
 interface AdminSectionProps {
   selectedLocation: string
@@ -47,6 +49,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
       "admin-locations": "locations",
       "admin-pending": "pending",
       "admin-changelog": "changelog",
+      "admin-database-import": "database-import",
     }
     return tabMap[subSection] || "overview"
   }
@@ -321,6 +324,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
   const renderStickerManagement = activeTab === "stickers"
   const renderLocationManagement = activeTab === "locations"
   const renderChangeLog = activeTab === "changelog"
+  const renderDatabaseImport = activeTab === "database-import"
 
   return (
     <div className="p-3">
@@ -975,6 +979,10 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
               )) : null}
             </div>
           </div>
+        )}
+
+        {renderDatabaseImport && (
+          <Phase4ImportPanel />
         )}
       </div>
     </div>

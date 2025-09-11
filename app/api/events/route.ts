@@ -29,12 +29,24 @@ export async function GET(request: NextRequest) {
       if (startDate || endDate) {
         where.date = {};
         if (startDate) {
-          const startInt = parseInt(startDate.replace(/-/g, ''));
+          // Convert YYYY-MM-DD to YYYYMMDD integer
+          const [year, month, day] = startDate.split('-').map(Number);
+          if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
+            console.error(`[API/Events] Invalid startDate format: ${startDate}`);
+            return NextResponse.json({ error: 'Invalid startDate format. Use YYYY-MM-DD' }, { status: 400 });
+          }
+          const startInt = year * 10000 + month * 100 + day;
           where.date.gte = startInt;
           console.log(`[API/Events] Filtering events from date: ${startInt} (original: ${startDate})`);
         }
         if (endDate) {
-          const endInt = parseInt(endDate.replace(/-/g, ''));
+          // Convert YYYY-MM-DD to YYYYMMDD integer
+          const [year, month, day] = endDate.split('-').map(Number);
+          if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
+            console.error(`[API/Events] Invalid endDate format: ${endDate}`);
+            return NextResponse.json({ error: 'Invalid endDate format. Use YYYY-MM-DD' }, { status: 400 });
+          }
+          const endInt = year * 10000 + month * 100 + day;
           where.date.lte = endInt;
           console.log(`[API/Events] Filtering events until date: ${endInt} (original: ${endDate})`);
         }
@@ -53,38 +65,6 @@ export async function GET(request: NextRequest) {
 
       console.log(`[API/Events] Retrieved ${events.length} events`);
 
-      // DEBUG: Log event types and sources
-      const eventTypes = events.reduce((acc, event) => {
-        acc[event.eventType] = (acc[event.eventType] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      console.log(`[DEBUG] Event types distribution:`, eventTypes);
-
-      // DEBUG: Log date range of all events in database
-      if (events.length > 0) {
-        const allDates = events.map(e => e.date);
-        const minDate = Math.min(...allDates);
-        const maxDate = Math.max(...allDates);
-        console.log(`[DEBUG] Database date range: ${minDate} to ${maxDate}`);
-        console.log(`[DEBUG] Sample dates:`, allDates.slice(0, 5));
-      }
-
-      // DEBUG: Log sample events to see data source
-      if (events.length > 0) {
-        console.log(`[DEBUG] Sample event 1:`, {
-          id: events[0].id,
-          title: events[0].title,
-          eventType: events[0].eventType,
-          saintNumber: events[0].saintNumber,
-          date: events[0].date
-        });
-      }
-
-      // Log date range of filtered events
-      if (events.length > 0) {
-        const dates = events.map(e => e.date).sort();
-        console.log(`[API/Events] Filtered date range: ${Math.min(...dates)} to ${Math.max(...dates)}`);
-      }
 
       return NextResponse.json(events);
     }

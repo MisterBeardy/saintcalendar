@@ -27,7 +27,7 @@ model Location {
   displayName   String
   address       String
   phoneNumber   String
-  sheetId       String
+  sheetId       String   @unique
   isActive      Boolean
   managerEmail  String
   openedDate    DateTime?

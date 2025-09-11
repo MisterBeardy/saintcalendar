@@ -148,6 +148,9 @@ export default function SaintsCalendarApp() {
         } else if (activeSection === "admin-pending") {
           baseInfo.submenuLabel = "Pending Changes"
           baseInfo.submenuDescription = "Review and approve changes"
+        } else if (activeSection === "admin-database-import") {
+          baseInfo.submenuLabel = "Database Import"
+          baseInfo.submenuDescription = "Phase 4 database import management"
         } else if (activeSection === "admin-changelog") {
           baseInfo.submenuLabel = "Change Log"
           baseInfo.submenuDescription = "Audit trail and history"

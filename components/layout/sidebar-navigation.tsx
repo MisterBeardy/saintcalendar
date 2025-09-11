@@ -74,6 +74,7 @@ const navigationItems: NavigationItem[] = [
        { id: "admin-saints", label: "Saint Management", description: "Manage saints" },
        { id: "admin-stickers", label: "Sticker Management", description: "Approve stickers" },
        { id: "admin-locations", label: "Location Management", description: "Manage locations" },
+       { id: "admin-database-import", label: "Database Import", description: "Phase 4 import management" },
        { id: "admin-pending", label: "Pending Changes", description: "Review changes" },
        { id: "admin-changelog", label: "Change Log", description: "Audit trail" },
      ],

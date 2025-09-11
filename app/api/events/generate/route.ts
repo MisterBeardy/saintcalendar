@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         // Prepare event data with historical information
         const eventData = {
           date,
-          title: `Generated Feast of ${saint.saintName}`,
+          title: `Saint ${saint.saintNumber.padStart(3, '0')}`,
           locationId: saint.locationId,
           saintNumber: saint.saintNumber,
           saintedYear: saint.saintYear,
