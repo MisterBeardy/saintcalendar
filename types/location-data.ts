@@ -8,7 +8,10 @@ export interface Location {
   sheetId: string
   isActive: boolean
   managerEmail: string
-  opened: string | null
+  openedDate: Date | null
+  status: 'OPEN' | 'PENDING' | 'CLOSED' | null
+  openingDate: Date | null
+  closingDate: Date | null
   exclude?: string
 }
 

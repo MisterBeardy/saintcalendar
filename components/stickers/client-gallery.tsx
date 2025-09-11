@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Search, Loader2 } from 'lucide-react'
 import type { Saint, Location, Sticker } from '@/app/stickers/gallery/page'
+import { generateUniqueKeyString } from '@/lib/key-validation'
 
 export default function ClientGallery() {
   const [allStickers, setAllStickers] = useState<Sticker[]>([])
@@ -165,31 +166,41 @@ export default function ClientGallery() {
         </div>
       ) : Array.isArray(filteredStickers) ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStickers.map((sticker) => (
-            <Card key={sticker?.id || Math.random()} className="w-full">
-              <CardHeader>
-                <img
-                  src={sticker?.imageUrl || '/placeholder.jpg'}
-                  alt={`${sticker?.saint?.name || 'Sticker'} sticker`}
-                  className="w-full h-48 object-cover rounded-md"
-                  loading="lazy"
-                />
-              </CardHeader>
-              <CardContent className="p-4">
-                <CardTitle className="text-lg font-semibold mb-1">{sticker?.saint?.name || 'Unknown Saint'}</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground mb-2">
-                  {sticker?.year || 'Unknown Year'}
-                </CardDescription>
-                <Badge variant="secondary" className="mb-3">
-                  {sticker?.location?.name || 'Unknown Location'}
-                </Badge>
-                {sticker?.type && <Badge variant="outline" className="ml-2">{sticker.type}</Badge>}
-                <div className="mt-4 flex justify-end">
-                  <Button variant="outline" size="sm">View Details</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {filteredStickers.map((sticker, index) => {
+            // Generate unique key using our utility function for stickers without IDs
+            const key = sticker?.id || `sticker-${index}-${generateUniqueKeyString()}`;
+            console.log(`Sticker key at index ${index}:`, key);
+            // Check for specific problematic keys
+            if (key.toString().includes('540-433-5225') || key.toString().includes('NA')) {
+              console.warn('Found potentially problematic key:', key);
+            }
+            console.log('About to render Card component for sticker:', sticker);
+            return (
+              <Card key={key} className="w-full">
+                <CardHeader>
+                  <img
+                    src={sticker?.imageUrl || '/placeholder.jpg'}
+                    alt={`${sticker?.saint?.name || 'Sticker'} sticker`}
+                    className="w-full h-48 object-cover rounded-md"
+                    loading="lazy"
+                  />
+                </CardHeader>
+                <CardContent className="p-4">
+                  <CardTitle className="text-lg font-semibold mb-1">{sticker?.saint?.name || 'Unknown Saint'}</CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground mb-2">
+                    {sticker?.year || 'Unknown Year'}
+                  </CardDescription>
+                  <Badge variant="secondary" className="mb-3">
+                    {sticker?.location?.name || 'Unknown Location'}
+                  </Badge>
+                  {sticker?.type && <Badge variant="outline" className="ml-2">{sticker.type}</Badge>}
+                  <div className="mt-4 flex justify-end">
+                    <Button variant="outline" size="sm">View Details</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12">

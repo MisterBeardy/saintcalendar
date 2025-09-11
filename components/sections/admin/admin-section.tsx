@@ -108,7 +108,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
         const response = await fetch('/api/pending-changes')
         if (response.ok) {
           const data = await response.json()
-          setPendingChanges(data)
+          setPendingChanges(data.pendingChanges || [])
         }
       } catch (error) {
         console.error('Failed to fetch pending changes:', error)
@@ -141,23 +141,24 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
     fetchSaints()
   }, [])
 
-  const filteredSaints = saints.filter((saint) => {
+  const filteredSaints = Array.isArray(saints) ? saints.filter((saint) => {
     const matchesSearch =
       saint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       saint.saintName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       saint.location.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === "all" || saint.status === statusFilter
     return matchesSearch && matchesStatus
-  })
+  }) : []
 
   const handleAddSaint = () => {
+    const currentSaints = Array.isArray(saints) ? saints : []
     const saint = {
-      id: saints.length + 1,
+      id: currentSaints.length + 1,
       ...newSaint,
       totalBeers: 1000,
       milestones: ["1000 Beers"],
     }
-    setSaints([...saints, saint])
+    setSaints([...currentSaints, saint])
     setNewSaint({
       name: "",
       saintName: "",
@@ -172,7 +173,8 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
   }
 
   const handleEditSaint = () => {
-    const originalSaint = saints.find((s) => s.id === selectedSaint.id)
+    const currentSaints = Array.isArray(saints) ? saints : []
+    const originalSaint = currentSaints.find((s) => s.id === selectedSaint.id)
     const changes: any = {}
 
     Object.keys(selectedSaint).forEach((key) => {
@@ -182,8 +184,9 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
     })
 
     if (Object.keys(changes).length > 0) {
+      const currentPendingChanges = Array.isArray(pendingChanges) ? pendingChanges : []
       const newPendingChange = {
-        id: pendingChanges.length + 1,
+        id: currentPendingChanges.length + 1,
         saintId: selectedSaint.id,
         saintName: selectedSaint.name,
         changeType: "edit",
@@ -193,7 +196,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
         status: "pending",
         comments: [],
       }
-      setPendingChanges([...pendingChanges, newPendingChange])
+      setPendingChanges([...currentPendingChanges, newPendingChange])
     }
 
     setIsEditSaintOpen(false)
@@ -201,7 +204,8 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
   }
 
   const handleDeleteSaint = (saintId: number) => {
-    setSaints(saints.filter((saint) => saint.id !== saintId))
+    const currentSaints = Array.isArray(saints) ? saints : []
+    setSaints(currentSaints.filter((saint) => saint.id !== saintId))
   }
 
   const handleViewSaint = (saint: any) => {
@@ -237,16 +241,17 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
   }, [])
 
   const handleApprovePendingChange = (changeId: number) => {
-    const change = pendingChanges.find((c) => c.id === changeId)
+    const change = Array.isArray(pendingChanges) ? pendingChanges.find((c) => c.id === changeId) : null
     if (change) {
-      setSaints(saints.map((saint) => (saint.id === change.saintId ? { ...saint, ...change.changes } : saint)))
+      const currentSaints = Array.isArray(saints) ? saints : []
+      setSaints(currentSaints.map((saint) => (saint.id === change.saintId ? { ...saint, ...change.changes } : saint)))
 
-      setPendingChanges(pendingChanges.map((c) => (c.id === changeId ? { ...c, status: "approved" } : c)))
+      setPendingChanges(Array.isArray(pendingChanges) ? pendingChanges.map((c) => (c.id === changeId ? { ...c, status: "approved" } : c)) : [])
     }
   }
 
   const handleRejectPendingChange = (changeId: number) => {
-    setPendingChanges(pendingChanges.map((c) => (c.id === changeId ? { ...c, status: "rejected" } : c)))
+    setPendingChanges(Array.isArray(pendingChanges) ? pendingChanges.map((c) => (c.id === changeId ? { ...c, status: "rejected" } : c)) : [])
   }
 
   // Fetch overview data from database
@@ -429,11 +434,11 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                           <SelectValue placeholder="Select location" />
                         </SelectTrigger>
                         <SelectContent>
-                          {locations.map((location) => (
+                          {Array.isArray(locations) ? locations.map((location) => (
                             <SelectItem key={location.id} value={`${location.state} - ${location.city}`}>
                               {location.state} - {location.city}
                             </SelectItem>
-                          ))}
+                          )) : null}
                         </SelectContent>
                       </Select>
                     </div>
@@ -584,11 +589,11 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Milestones</Label>
                       <div className="flex gap-2 mt-1">
-                        {selectedSaint.milestones.map((milestone: string, index: number) => (
+                        {Array.isArray(selectedSaint.milestones) ? selectedSaint.milestones.map((milestone: string, index: number) => (
                           <Badge key={index} variant="outline">
                             {milestone}
                           </Badge>
-                        ))}
+                        )) : null}
                       </div>
                     </div>
                     {selectedSaint.notes && (
@@ -644,11 +649,11 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {locations.map((location) => (
+                          {Array.isArray(locations) ? locations.map((location) => (
                             <SelectItem key={location.id} value={`${location.state} - ${location.city}`}>
                               {location.state} - {location.city}
                             </SelectItem>
-                          ))}
+                          )) : null}
                         </SelectContent>
                       </Select>
                     </div>
@@ -692,7 +697,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
             </div>
 
             <div className="space-y-4">
-              {pendingChanges.map((change) => (
+              {Array.isArray(pendingChanges) ? pendingChanges.map((change) => (
                 <Card key={change.id}>
                   <CardContent className="p-4">
                     <div className="space-y-4">
@@ -741,7 +746,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                         </div>
                       </div>
 
-                      {change.comments.length > 0 && (
+                      {Array.isArray(change.comments) && change.comments.length > 0 && (
                         <div>
                           <Label className="text-sm font-medium text-muted-foreground">Comments:</Label>
                           <div className="mt-1 space-y-2">
@@ -756,7 +761,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )) : null}
             </div>
           </div>
         )}
@@ -781,7 +786,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                   <div className="w-3 h-3 bg-green-500 rounded-full" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{locations.filter((l) => l.status === "active").length}</div>
+                  <div className="text-2xl font-bold">{Array.isArray(locations) ? locations.filter((l) => l.status === "active").length : 0}</div>
                   <p className="text-xs text-muted-foreground">Currently operational</p>
                 </CardContent>
               </Card>
@@ -791,14 +796,14 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                   <div className="w-3 h-3 bg-yellow-500 rounded-full" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{locations.filter((l) => l.status === "pending").length}</div>
+                  <div className="text-2xl font-bold">{Array.isArray(locations) ? locations.filter((l) => l.status === "pending").length : 0}</div>
                   <p className="text-xs text-muted-foreground">Awaiting setup</p>
                 </CardContent>
               </Card>
             </div>
 
             <div className="space-y-4">
-              {locations.map((location) => (
+              {Array.isArray(locations) ? locations.map((location) => (
                 <Card key={location.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -838,7 +843,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )) : null}
             </div>
           </div>
         )}
@@ -886,7 +891,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {changeLog.filter((log) => log.timestamp.startsWith("2024-01-15")).length}
+                    {Array.isArray(changeLog) ? changeLog.filter((log) => log.timestamp.startsWith("2024-01-15")).length : 0}
                   </div>
                   <p className="text-xs text-muted-foreground">Actions performed</p>
                 </CardContent>
@@ -898,7 +903,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {changeLog.filter((log) => log.status === "pending_approval").length}
+                    {Array.isArray(changeLog) ? changeLog.filter((log) => log.status === "pending_approval").length : 0}
                   </div>
                   <p className="text-xs text-muted-foreground">Awaiting review</p>
                 </CardContent>
@@ -909,14 +914,14 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{new Set(changeLog.map((log) => log.user)).size}</div>
+                  <div className="text-2xl font-bold">{Array.isArray(changeLog) ? new Set(changeLog.map((log) => log.user)).size : 0}</div>
                   <p className="text-xs text-muted-foreground">Making changes</p>
                 </CardContent>
               </Card>
             </div>
 
             <div className="space-y-3">
-              {changeLog.map((log) => (
+              {Array.isArray(changeLog) ? changeLog.map((log) => (
                 <Card key={log.id}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -967,7 +972,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )) : null}
             </div>
           </div>
         )}

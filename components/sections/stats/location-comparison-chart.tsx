@@ -93,8 +93,10 @@ export function LocationComparisonChart({ selectedLocation }: LocationComparison
               const maxSaints = Math.max(...filteredLocationStats.map((s) => s.saints))
               const percentage = maxSaints > 0 ? (stat.saints / maxSaints) * 100 : 0
 
+              // Create a unique key by combining the location name with its index
+              const key = `${stat.location}-${index}`;
               return (
-                <div key={stat.location} className="space-y-2 group">
+                <div key={key} className="space-y-2 group">
                   <div className="flex justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <MapPin className="h-3 w-3 text-muted-foreground" />

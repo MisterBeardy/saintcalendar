@@ -14,6 +14,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum LocationStatus {
+  OPEN
+  PENDING
+  CLOSED
+}
+
 model Location {
   id            String   @id
   state         String
@@ -24,7 +30,10 @@ model Location {
   sheetId       String
   isActive      Boolean
   managerEmail  String
-  opened        String?
+  openedDate    DateTime?
+  status        LocationStatus?
+  openingDate   DateTime?
+  closingDate   DateTime?
   exclude       String?
   saints        Saint[]
   events        Event[]
@@ -107,4 +116,75 @@ model Sticker {
   year        Int?
   imageUrl    String?
   type        String?
+}
+
+model Job {
+  id            String    @id
+  userId        String
+  type          String
+  spreadsheetId String?
+  status        String    @default("pending")
+  progress      Int       @default(0)
+  message       String?
+  data          Json?
+  error         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  workflowId    String?
+  phaseId       String?
+  workflow      ImportWorkflow? @relation(fields: [workflowId], references: [id])
+  phase         ImportPhase?    @relation(fields: [phaseId], references: [id])
+
+  @@index([status, updatedAt])
+  @@index([userId, status])
+}
+
+model ImportWorkflow {
+  id            String    @id @default(cuid())
+  userId        String
+  spreadsheetId String?
+  importType    String    @default("sheets") // sheets, zip
+  status        String    @default("pending") // pending, processing, completed, failed, cancelled
+  currentPhase  String?   // current phase name
+  totalPhases   Int       @default(5) // scan, locations, verify, count, final
+  completedPhases Int     @default(0)
+  autoApprove   Boolean   @default(false) // enable auto-approval for low-risk phases
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  jobs          Job[]
+  phases        ImportPhase[]
+  rollbacks     ImportRollback[]
+}
+
+model ImportPhase {
+  id            String    @id @default(cuid())
+  workflowId    String
+  workflow      ImportWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  name          String    // scan, locations, verify, count, final
+  status        String    @default("pending") // pending, processing, completed, failed, cancelled
+  order         Int       // execution order
+  progress      Int       @default(0)
+  message       String?
+  data          Json?     // phase-specific data
+  error         String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  jobs          Job[]
+  rollbacks     ImportRollback[]
+}
+
+model ImportRollback {
+  id            String    @id @default(cuid())
+  workflowId    String
+  workflow      ImportWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  phaseId       String
+  phase         ImportPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  action        String    // rollback action description
+  status        String    @default("pending") // pending, processing, completed, failed
+  data          Json?     // rollback data
+  error         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

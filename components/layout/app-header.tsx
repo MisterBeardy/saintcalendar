@@ -1,7 +1,5 @@
 "use client"
 
-"use client"
-
 interface AppHeaderProps {
   activeItemLabel: string
   activeItemDescription: string

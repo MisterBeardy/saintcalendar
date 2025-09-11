@@ -16,6 +16,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+/temp/*
 
 # env files
 .env*
@@ -30,3 +31,4 @@ next-env.d.ts
 oneofus-beer-8ea16481aa65.json
 db_import.log
 api_debug.log
+google-sheets-key.json

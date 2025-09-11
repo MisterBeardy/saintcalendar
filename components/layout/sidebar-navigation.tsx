@@ -2,6 +2,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useSession, signIn } from "next-auth/react"
 import { Calendar, Users, ImageIcon, BarChart3, Settings, ChevronDown, ChevronRight } from "lucide-react"
 
 interface SubMenuItem {
@@ -75,8 +76,21 @@ const navigationItems: NavigationItem[] = [
        { id: "admin-locations", label: "Location Management", description: "Manage locations" },
        { id: "admin-pending", label: "Pending Changes", description: "Review changes" },
        { id: "admin-changelog", label: "Change Log", description: "Audit trail" },
-       { id: "database-entries", label: "Database Management", description: "Manage database entries" },
      ],
+  },
+  {
+    id: "database-settings",
+    label: "Database Settings",
+    icon: Settings,
+    description: "Database configuration",
+    subItems: [
+      { id: "database-connection", label: "Connection Settings", description: "Database connection config" },
+      { id: "database-schema", label: "Schema Verification", description: "Verify database schema" },
+      { id: "database-performance", label: "Performance Settings", description: "Database performance tuning" },
+      { id: "database-security", label: "Security Verification", description: "Database security checks" },
+      { id: "database-maintenance", label: "Maintenance Settings", description: "Database maintenance tools" },
+      { id: "database-setup", label: "Setup Database", description: "Automated database setup" },
+    ],
   },
 ]
 
@@ -86,7 +100,11 @@ interface SidebarNavigationProps {
 }
 
 export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNavigationProps) {
+  const { data: session, status } = useSession()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+  const [filteredNavigationItems, setFilteredNavigationItems] = useState<NavigationItem[]>(
+    navigationItems.filter(item => item.id !== "admin")
+  )
 
   // Auto-expand the section containing the active item
   useEffect(() => {
@@ -118,6 +136,12 @@ export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNa
   }
 
   const handleItemClick = (item: NavigationItem) => {
+    // Check if trying to access admin section without authentication
+    if (item.id === "admin" && !session) {
+      signIn()
+      return
+    }
+
     if (item.subItems) {
       toggleSection(item.id)
     } else {
@@ -125,10 +149,24 @@ export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNa
     }
   }
 
+  // Update filtered navigation items after session loads to prevent hydration mismatch
+  useEffect(() => {
+    if (status !== "loading") {
+      setFilteredNavigationItems(
+        navigationItems.filter(item => {
+          if (item.id === "admin") {
+            return !!session
+          }
+          return true
+        })
+      )
+    }
+  }, [session, status])
+
   return (
     <nav className="flex-1 p-3">
       <div className="space-y-1">
-        {navigationItems.map((item) => {
+        {filteredNavigationItems.map((item) => {
           const Icon = item.icon
           const hasSubItems = item.subItems && item.subItems.length > 0
           const containsActiveSub = hasSubItems ? item.subItems!.some((s) => s.id === activeSection) : false

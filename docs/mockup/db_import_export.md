@@ -7,7 +7,7 @@ The Google Sheets Import/Export section provides administrators with a comprehen
 **Core Data Types:**
 - **Saints**: Canonical saint records with feast dates and biographical information
 - **Historical Data**: Location-specific events and historical records
-- **Milestones**: Achievement tracking with fields for Saint Number, Count, Date, and Sticker
+- **Milestone Data**: Achievement tracking with fields for Saint Number, Count, Date, and Sticker
 
 The new section integrates seamlessly with the existing database management interface, providing a unified workflow for data administrators to:
 - Preview and validate data before import
@@ -60,9 +60,9 @@ The Google Sheets Import/Export section integrates as a new subsection within th
 │ │ [Check Master Sheet]                      │  │
 │ │                                           │  │
 │ │ ┌─ Data Types ──────────────────────────┐ │  │
-│ │ │ ☑ Saints Data (1,234 records)        │ │  │
+│ │ │ ☑ Saint Data (1,234 records)        │ │  │
 │ │ │ ☑ Historical Data (567 records)      │ │  │
-│ │ │ ☑ Milestones (89 records)            │ │  │
+│ │ │ ☑ Milestone Data (89 records)        │ │  │
 │ │ └───────────────────────────────────────┘ │  │
 │ │                                           │  │
 │ │ ┌─ Locations ──────────────────────────┐ │  │
@@ -128,7 +128,7 @@ ImportPreview
 │       │   ├── Active Locations
 │       │   ├── Saints count
 │       │   ├── Historical Data count
-│       │   └── Milestones count
+│       │   └── Milestone Data count
 │       └── Conflict alerts
 ├── Card (Import Options)
 │   ├── CardHeader
@@ -138,7 +138,7 @@ ImportPreview
 │       ├── Data Type Selection
 │       │   ├── Checkbox: Saints
 │       │   ├── Checkbox: Historical Data
-│       │   └── Checkbox: Milestones
+│       │   └── Checkbox: Milestone Data
 │       ├── Milestone Validation Options
 │       │   ├── Validate Saint Number references
 │       │   ├── Check Date format (YYYY-MM-DD)
@@ -191,7 +191,7 @@ ExportInterface
 │       └── Data Type Selection
 │           ├── Checkbox: Saints
 │           ├── Checkbox: Historical Data
-│           └── Checkbox: Milestones
+│           └── Checkbox: Milestone Data
 ├── Card (Location Selection)
 │   ├── CardHeader
 │   │   ├── CardTitle: "Select Locations"

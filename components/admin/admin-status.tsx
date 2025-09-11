@@ -75,11 +75,17 @@ export function AdminStatus() {
     { label: "Total Events", value: dbStatus.tables.Events.recordCount, change: "0", trend: "stable" },
     { label: "Total Locations", value: dbStatus.tables.Locations.recordCount, change: "0", trend: "stable" },
     { label: "Database Size", value: dbStatus.database.size, change: "0%", trend: "stable" },
+    { label: "Open Locations", value: 0, change: "0", trend: "stable" }, // Placeholder for future implementation
+    { label: "Pending Locations", value: 0, change: "0", trend: "stable" }, // Placeholder for future implementation
+    { label: "Closed Locations", value: 0, change: "0", trend: "stable" }, // Placeholder for future implementation
   ] : [
     { label: "Total Saints", value: 0, change: "0", trend: "stable" },
     { label: "Total Events", value: 0, change: "0", trend: "stable" },
     { label: "Total Locations", value: 0, change: "0", trend: "stable" },
     { label: "Database Size", value: "N/A", change: "0%", trend: "stable" },
+    { label: "Open Locations", value: 0, change: "0", trend: "stable" },
+    { label: "Pending Locations", value: 0, change: "0", trend: "stable" },
+    { label: "Closed Locations", value: 0, change: "0", trend: "stable" },
   ]
 
   const getStatusIcon = (status: string) => {
@@ -135,7 +141,7 @@ export function AdminStatus() {
       </div>
 
       {/* System Metrics */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7">
         {systemMetrics.map((metric) => (
           <Card key={metric.label}>
             <CardContent className="p-4">

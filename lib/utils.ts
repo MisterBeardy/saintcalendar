@@ -22,24 +22,41 @@ const MONTH_NUMBERS: { [key: string]: number } = {
 export function detectDateFormat(dateStr: string): 'mm/dd/yyyy' | 'yyyy-mm-dd' | 'month day' | 'unknown' {
   if (!dateStr || typeof dateStr !== 'string') return 'unknown';
 
+  // Add diagnostic logging
+  console.log(`[DEBUG] detectDateFormat called with: "${dateStr}" (type: ${typeof dateStr})`);
+
   // Check for MM/DD/YYYY format (e.g., "01/15/2023" or "1/15/2023")
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+  const mmddyyyyRegex = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+  const mmddyyyyTest = mmddyyyyRegex.test(dateStr);
+  console.log(`[DEBUG] MM/DD/YYYY regex test result: ${mmddyyyyTest}`);
+  if (mmddyyyyTest) {
+    console.log(`[DEBUG] Matched MM/DD/YYYY format`);
     return 'mm/dd/yyyy';
   }
 
   // Check for YYYY-MM-DD format (e.g., "2023-01-15")
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+  const yyyymmddRegex = /^\d{4}-\d{2}-\d{2}$/;
+  const yyyymmddTest = yyyymmddRegex.test(dateStr);
+  console.log(`[DEBUG] YYYY-MM-DD regex test result: ${yyyymmddTest}`);
+  if (yyyymmddTest) {
+    console.log(`[DEBUG] Matched YYYY-MM-DD format`);
     return 'yyyy-mm-dd';
   }
 
   // Check for Month Day format (e.g., "January 15")
-  if (/^[A-Za-z]+\s+\d{1,2}$/.test(dateStr)) {
+  const monthDayRegex = /^[A-Za-z]+\s+\d{1,2}$/;
+  const monthDayTest = monthDayRegex.test(dateStr);
+  console.log(`[DEBUG] Month Day regex test result: ${monthDayTest}`);
+  if (monthDayTest) {
     const parts = dateStr.split(' ');
+    console.log(`[DEBUG] Month Day parts:`, parts);
     if (parts.length === 2 && MONTH_NUMBERS[parts[0]]) {
+      console.log(`[DEBUG] Matched Month Day format`);
       return 'month day';
     }
   }
 
+  console.log(`[DEBUG] No format matched, returning unknown`);
   return 'unknown';
 }
 
@@ -154,9 +171,165 @@ export function isValidDate(dateStr: string): boolean {
 }
 
 /**
+ * Parses a comma-separated string into an array of strings
+ * Handles null, undefined, or empty strings gracefully
+ * Trims whitespace from each item and filters out empty items
+ * @param str The comma-separated string to parse
+ * @returns An array of trimmed, non-empty strings
+ */
+export function parseBeerList(str: string | null | undefined): string[] {
+  // Add diagnostic logging
+  console.log(`[DEBUG] parseBeerList called with: "${str}" (type: ${typeof str})`);
+  
+  // Handle null or undefined input
+  if (str === null || str === undefined) {
+    console.log(`[DEBUG] Input is null or undefined, returning empty array`);
+    return [];
+  }
+  
+  // Handle non-string inputs
+  if (typeof str !== 'string') {
+    console.log(`[DEBUG] Input is not a string, converting to string`);
+    str = String(str);
+  }
+  
+  // Handle empty strings
+  if (str === '') {
+    console.log(`[DEBUG] Input is empty string, returning empty array`);
+    return [];
+  }
+  
+  // Split the string by commas, trim whitespace from each item, and filter out any empty items
+  const result = str.split(',').map(s => s.trim()).filter(s => s);
+  console.log(`[DEBUG] parseBeerList result:`, result);
+  return result;
+}
+
+/**
  * Gets the month number (1-12) from a month name
  * @deprecated Use MONTH_NUMBERS directly or convertToNumericDate for full conversion
  */
 export function getMonthNumber(monthStr: string): number {
   return MONTH_NUMBERS[monthStr] || 0;
+}
+
+/**
+ * Converts a date string in MM/DD/YYYY format to database format
+ * @param dateStr Date string in MM/DD/YYYY format
+ * @returns Object with saintDate (Month Day format) and eventDate (MMDD number format)
+ */
+export function convertSheetDateToDBFormat(dateStr: string): { saintDate: string; eventDate: number } | null {
+  // Add diagnostic logging
+  console.log(`[DEBUG] convertSheetDateToDBFormat called with: "${dateStr}" (type: ${typeof dateStr})`);
+  
+  // Validate input format
+  const dateFormatRegex = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+  const formatValid = dateFormatRegex.test(dateStr);
+  console.log(`[DEBUG] Date format validation result: ${formatValid}`);
+  if (!formatValid) {
+    console.log(`[DEBUG] Date format validation failed for: "${dateStr}"`);
+    return null;
+  }
+
+  try {
+    // Parse the date components
+    const parts = dateStr.split('/');
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+
+    // Validate ranges
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2100) {
+      return null;
+    }
+
+    // Create date object to validate the date is actually valid (handles cases like Feb 30)
+    const date = new Date(year, month - 1, day);
+    if (date.getMonth() !== month - 1 || date.getDate() !== day || date.getFullYear() !== year) {
+      return null;
+    }
+
+    // Format saintDate as "Month Day"
+    const monthName = MONTH_NAMES[month - 1];
+    const saintDate = `${monthName} ${day}`;
+
+    // Format eventDate as MMDD
+    const eventDate = month * 100 + day;
+
+    return { saintDate, eventDate };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Constructs a historical event date in MMDD format from a saintDate and historical year
+ * @param saintDate Date string in MM/DD/YYYY format
+ * @param historicalYear The year for the historical event
+ * @returns Number in MMDD format
+ */
+export function constructHistoricalEventDate(saintDate: string, historicalYear: number): number | null {
+  // Add diagnostic logging
+  console.log(`[DEBUG] constructHistoricalEventDate called with saintDate: "${saintDate}", historicalYear: ${historicalYear}`);
+
+  // Validate historicalYear
+  if (historicalYear < 1900 || historicalYear > 2100) {
+    console.log(`[DEBUG] Historical year validation failed: ${historicalYear}`);
+    return null;
+  }
+
+  // Validate and parse the saintDate
+  const dateFormatRegex = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+  const formatValid = dateFormatRegex.test(saintDate);
+  console.log(`[DEBUG] Saint date format validation result: ${formatValid}`);
+  if (!formatValid) {
+    console.log(`[DEBUG] Saint date format validation failed for: "${saintDate}"`);
+    return null;
+  }
+
+  try {
+    const parts = saintDate.split('/');
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+
+    // Validate ranges
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      return null;
+    }
+
+    // Create date object to validate the date is actually valid (handles cases like Feb 30)
+    const year = new Date().getFullYear(); // Use any year for validation since we only care about month/day
+    const date = new Date(year, month - 1, day);
+    if (date.getMonth() !== month - 1 || date.getDate() !== day) {
+      return null;
+    }
+
+    // Format as MMDD
+    return month * 100 + day;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Safely formats a date string or Date object for display
+ * @param dateString Date string, Date object, or null/undefined
+ * @param fallbackText Text to display when date is invalid or missing (default: 'Unknown')
+ * @returns Formatted date string or fallback text
+ */
+export function formatWorkflowDate(dateString: string | Date | null | undefined, fallbackText: string = 'Unknown'): string {
+  if (!dateString) return fallbackText;
+
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn(`[DATE FORMAT WARNING] Invalid date string: "${dateString}"`);
+      return fallbackText;
+    }
+
+    return date.toLocaleString();
+  } catch (error) {
+    console.error(`[DATE FORMAT ERROR] Failed to format date: "${dateString}", error: ${error}`);
+    return fallbackText;
+  }
 }

@@ -1,5 +1,4 @@
 "use client"
-"use client"
 
 import { MapPin, ChevronDown, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -45,15 +44,19 @@ export function AppSidebar({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56">
-            {locations.map((location) => (
-              <DropdownMenuItem
-                key={location}
-                onClick={() => setSelectedLocation(location)}
-                className={selectedLocation === location ? "bg-accent/10" : ""}
-              >
-                {location}
-              </DropdownMenuItem>
-            ))}
+            {locations.map((location, index) => {
+              // Create a unique key by combining the location name with its index
+              const key = `${location}-${index}`;
+              return (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => setSelectedLocation(location)}
+                  className={selectedLocation === location ? "bg-accent/10" : ""}
+                >
+                  {location}
+                </DropdownMenuItem>
+              );
+            })}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "dependencies": {
     "@prisma/client": "^6.15.0",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -7,33 +8,64 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/postcss": "^4.1.13",
+    "@types/winston": "^2.4.4",
     "@vercel/analytics": "^1.5.0",
+    "adm-zip": "^0.5.16",
     "axios": "^1.11.0",
+    "bullmq": "^5.58.5",
     "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "csv-parser": "^3.2.0",
+    "csv-writer": "^1.6.0",
     "dotenv": "^17.2.2",
+    "express-rate-limit": "^8.1.0",
+    "formdata-node": "^6.0.3",
     "googleapis": "^159.0.0",
     "inquirer": "^12.9.4",
+    "ioredis": "^5.7.0",
     "lucide-react": "^0.460.0",
     "next": "15",
+    "next-auth": "^4.24.11",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^6.10.1",
+    "p-limit": "^7.1.1",
     "prisma": "^6.15.0",
+    "prom-client": "^15.1.3",
     "react": "19",
     "react-dom": "19",
+    "recharts": "^3.2.0",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.13",
-    "tw-animate-css": "^1.3.8"
+    "tw-animate-css": "^1.3.8",
+    "winston": "^3.17.0",
+    "yargs": "^18.0.0",
+    "zod": "^4.1.5"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"redis-server\" \"next dev\"",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "generate-sample-zip": "tsx scripts/generate-sample-zip.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
   },
   "devDependencies": {
-    "@types/node": "24.3.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.3.1",
     "@types/react": "19.1.12",
-    "typescript": "5.9.2"
+    "concurrently": "^9.2.1",
+    "jsdom": "^26.1.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
+    "typescript": "5.9.2",
+    "vitest": "^3.2.4"
   }
 }

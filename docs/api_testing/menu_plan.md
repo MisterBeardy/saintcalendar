@@ -27,7 +27,7 @@ The application uses a hierarchical sidebar navigation with expandable sections.
 **Sub-Menus**:
 - **All Saints**: Browse complete saint database
 - **Recent Saints**: Latest saint additions
-- **Milestones**: Beer achievement tracking
+- **Milestone Data**: Beer achievement tracking
 
 **API Integration**:
 - `/api/saints` - Core saint CRUD operations
@@ -56,7 +56,7 @@ The application uses a hierarchical sidebar navigation with expandable sections.
 - **Location Stats**: Location-based analytics
 - **State vs State**: Geographic comparisons
 - **Monthly Trends**: Time-based trend analysis
-- **Milestones**: Achievement statistics
+- **Milestone Data**: Achievement statistics
 
 **API Integration**:
 - `/api/stats/locations` - Location statistics (if implemented)

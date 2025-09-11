@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "next-auth/react"
 import { HomeSection } from "@/components/sections/home/home-section"
 import { SaintInformationSection } from "@/components/sections/saints/saint-information-section"
 import { StickerBoxSection } from "@/components/sections/stickers/sticker-box-section"
@@ -17,13 +18,15 @@ interface ContentRouterProps {
 }
 
 export function ContentRouter({ activeSection, selectedLocation, dataSource, setDataSource }: ContentRouterProps) {
+  const { data: session } = useSession()
   const isHomeSection = activeSection === "home" || activeSection.startsWith("home-")
   const isSaintsSection = activeSection === "saints" || activeSection.startsWith("saints-")
   const isStickersSection = activeSection === "stickers" || activeSection.startsWith("stickers-")
   const isStickersGallery = activeSection === "stickers-gallery"
   const isStickersTemplates = activeSection === "stickers-templates"
   const isStatsSection = activeSection === "stats" || activeSection.startsWith("stats-")
-const isDatabaseSection = activeSection.startsWith("database-")
+  const isDatabaseSection = activeSection.startsWith("database-")
+  const isDatabaseSettingsSection = activeSection.startsWith("database-settings") || activeSection.startsWith("database-")
   const isAdminSection = activeSection === "admin" || activeSection.startsWith("admin-")
 
   switch (true) {
@@ -54,11 +57,21 @@ const isDatabaseSection = activeSection.startsWith("database-")
       return (
         <StatsSection selectedLocation={selectedLocation} dataSource={dataSource} activeSubSection={activeSection} />
       )
+    case isDatabaseSettingsSection:
+      return (
+        <DatabaseManagementSection selectedLocation={selectedLocation} dataSource={dataSource} activeSubSection={activeSection} />
+      )
     case isDatabaseSection:
       return (
         <DatabaseManagementSection selectedLocation={selectedLocation} dataSource={dataSource} activeSubSection={activeSection} />
       )
     case isAdminSection:
+      // Check if user is authenticated before showing admin section
+      if (!session) {
+        // Redirect to login page
+        window.location.href = '/auth/signin'
+        return null
+      }
       return (
         <AdminSection
           selectedLocation={selectedLocation}

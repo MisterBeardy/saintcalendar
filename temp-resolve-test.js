@@ -1,0 +1,1 @@
+console.log('Script dir:', __dirname); console.log('CWD:', process.cwd()); const path = require('path'); console.log('Relative to lib:', path.resolve(__dirname, '../../../lib/google-sheets/auth.ts'));

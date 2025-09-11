@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '../../../../lib/generated/prisma';
-import { normalizeToMonthDay, convertToNumericDate, detectDateFormat } from '../../../../lib/utils';
+import { PrismaClient } from '@/lib/generated/prisma';
+import { normalizeToMonthDay, convertToNumericDate, detectDateFormat } from '@/lib/utils';
 
 const prisma = new PrismaClient();
 

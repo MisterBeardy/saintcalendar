@@ -1,6 +1,7 @@
 "use client"
 
 import type { Saint } from "@/types/saint-events"
+import { validateUniqueKeysByProperty } from "@/lib/key-validation"
 
 interface SaintsListProps {
   saints: Saint[]
@@ -10,13 +11,21 @@ interface SaintsListProps {
 }
 
 export function SaintsList({ saints, searchTerm, onSaintClick, debouncedSearchTerm }: SaintsListProps) {
+  // Validate that there are no duplicate saint numbers in the data
+  const validateSaintNumbers = () => {
+    validateUniqueKeysByProperty(saints, 'saintNumber', 'saints-list');
+  }
+
+  // Run validation on component mount and when saints change
+  validateSaintNumbers();
+
   return (
     <div className="space-y-4">
       <h4 className="font-heading font-semibold">{searchTerm ? `Search Results (${saints.length})` : "Recent Saints"}</h4>
       <div className="grid gap-4">
         {saints.map((saint) => (
           <button
-            key={saint.saintNumber}
+            key={`${saint.saintNumber}-${saint.id}`}
             onClick={() => onSaintClick(saint)}
             className="text-left p-4 bg-card border rounded-lg hover:bg-muted/50 transition-colors"
           >

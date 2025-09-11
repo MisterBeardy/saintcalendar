@@ -14,8 +14,8 @@ This document identifies APIs that are not currently implemented but would enhan
 
 **Rationale**: The navigation includes saint management, and years are a key component of saint profiles. Dedicated endpoints would allow for better year-specific operations and analytics.
 
-### Milestone Management
-**Current Status**: Milestones are included in saint relations but lack dedicated API access.
+### Milestone Data Management
+**Current Status**: Milestone Data are included in saint relations but lack dedicated API access.
 
 **Suggested Endpoints**:
 - `/api/milestones` - CRUD operations for Milestone records
@@ -23,7 +23,7 @@ This document identifies APIs that are not currently implemented but would enhan
 - `/api/milestones/count` - Count of milestones
 - `/api/milestones/recent` - Recent milestone achievements
 
-**Rationale**: Milestones are tracked achievements and would benefit from dedicated management and querying capabilities.
+**Rationale**: Milestone Data are tracked achievements and would benefit from dedicated management and querying capabilities.
 
 ### Comprehensive Sticker Management
 **Current Status**: Only `/api/stickers/pending` exists for approval workflow.
@@ -101,7 +101,7 @@ This document identifies APIs that are not currently implemented but would enhan
 
 ### High Priority
 1. Saint Year Management - Essential for saint profile completeness
-2. Milestone Management - Core to the achievement tracking system
+2. Milestone Data Management - Core to the achievement tracking system
 3. Comprehensive Sticker Management - Supports existing navigation structure
 4. Analytics APIs - Required for stats section functionality
 

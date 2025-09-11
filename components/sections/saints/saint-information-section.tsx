@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
 import { Users, Trophy, Award, Star, Crown } from "lucide-react"
+import { validateUniqueKeysByProperty } from "@/lib/key-validation"
 import { SaintSearch } from "./saint-search"
 import { SaintsList } from "./saints-list"
 import { SaintProfileModal } from "@/components/modals/saint-profile-modal"
@@ -40,6 +41,9 @@ export function SaintInformationSection({
           milestones: saint.milestones || []
         }))
         setSaints(transformedSaints)
+        
+        // Validate saint numbers for duplicates
+        validateUniqueKeysByProperty(transformedSaints, 'saintNumber', 'saint-information-section');
       } catch (error) {
         console.error('Error fetching saints:', error)
       } finally {
@@ -144,7 +148,7 @@ export function SaintInformationSection({
               const Icon = tierInfo.icon
               return (
                 <div
-                  key={saint.saintNumber}
+                  key={`${saint.saintNumber}-${index}`}
                   className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
                   onClick={() => handleSaintClick(saint)}
                 >

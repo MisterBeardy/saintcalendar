@@ -1,10 +1,9 @@
 "use client"
 
-"use client"
-
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { Calendar, Users, ImageIcon, BarChart3, Settings } from "lucide-react"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { AppHeader } from "@/components/layout/app-header"
