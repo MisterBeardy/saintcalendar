@@ -1,6 +1,6 @@
-# Sticker Pages Design and Requirements
+# Sticker Box Pages Design and Requirements
 
-This document outlines the design specifications and requirements for the sticker pages in the Saint Calendar Next.js/React application. The stickers feature is divided into two main subsections: **Gallery** and **Templates** (renamed from the previous "Favorites"). The overall navigation under the "Stickers" menu will be updated to reflect these changes, with the separate "Search" menu item removed and its functionality integrated directly into the Gallery page. This design ensures a streamlined user experience, reducing navigation complexity while providing robust search capabilities within the Gallery.
+This document outlines the design specifications and requirements for the Sticker Box pages in the Saint Calendar Next.js/React application. The Sticker Box feature is divided into two main subsections: **Gallery** and **Templates** (renamed from the previous "Favorites"). The overall navigation under the "Sticker Box" menu will be updated to reflect these changes, with the separate "Search" menu item removed and its functionality integrated directly into the Gallery page. This design ensures a streamlined user experience, reducing navigation complexity while providing robust search capabilities within the Gallery.
 
 The following sections detail the navigation updates, UI designs for each subsection, and integration notes. All designs prioritize responsive layouts using Tailwind CSS (consistent with the project's styling), accessibility (e.g., ARIA labels, keyboard navigation), and integration with the existing Prisma database for sticker data retrieval.
 
@@ -8,17 +8,17 @@ The following sections detail the navigation updates, UI designs for each subsec
 
 To simplify the sticker-related navigation and consolidate functionality, the following updates are required in the sidebar navigation component ([`components/layout/sidebar-navigation.tsx`](components/layout/sidebar-navigation.tsx)) and any related routing logic in [`app/layout.tsx`](app/layout.tsx) or Next.js routing files:
 
-- **Rename "Favorites" to "Templates"**: In the Stickers menu dropdown or subsection, change the label from "Favorites" to "Templates". This reflects the new focus on sticker size templates rather than user-saved favorites.
+- **Rename "Favorites" to "Templates"**: In the Sticker Box menu dropdown or subsection, change the label from "Favorites" to "Templates". This reflects the new focus on sticker size templates rather than user-saved favorites.
   
-- **Remove "Search" Menu Item**: Eliminate the separate "Search" item from the Stickers menu. Search functionality will be merged into the Gallery page, avoiding redundant navigation.
+- **Remove "Search" Menu Item**: Eliminate the separate "Search" item from the Sticker Box menu. Search functionality will be merged into the Gallery page, avoiding redundant navigation.
 
 - **Add/Ensure Routing Links to Gallery and Templates**:
-  - **Gallery**: Route to `/stickers/gallery` (or equivalent dynamic route). This page will display a grid of stickers fetched from the database via the existing API endpoint ([`app/api/stickers/route.ts`](app/api/stickers/route.ts)). Include a link in the Stickers menu labeled "Gallery".
-  - **Templates**: Route to `/stickers/templates`. This page will be static or semi-dynamic, listing predefined sticker sizes with external links. Add a link in the Stickers menu labeled "Templates".
+  - **Gallery**: Route to `/stickers/gallery` (or equivalent dynamic route). This page will display a grid of stickers fetched from the database via the existing API endpoint ([`app/api/stickers/route.ts`](app/api/stickers/route.ts)). Include a link in the Sticker Box menu labeled "Gallery".
+  - **Templates**: Route to `/stickers/templates`. This page will be static or semi-dynamic, listing predefined sticker sizes with external links. Add a link in the Sticker Box menu labeled "Templates".
   
 - **Updated Menu Structure (ASCII Art Representation)**:
   ```
-  Stickers (Main Menu Item)
+  Sticker Box (Main Menu Item)
   ├── Gallery (Link to /stickers/gallery)
   └── Templates (Link to /stickers/templates)
   ```
@@ -28,7 +28,7 @@ To simplify the sticker-related navigation and consolidate functionality, the fo
 - **Routing Implementation Notes**:
   - Use Next.js App Router for client-side navigation with `useRouter` from `next/navigation`.
   - Update any hardcoded links in [`components/layout/sidebar.tsx`](components/layout/sidebar.tsx) to match the new routes.
-  - Ensure the main Stickers entry point (e.g., `/stickers`) redirects to `/stickers/gallery` as the default view.
+  - Ensure the main Sticker Box entry point (e.g., `/stickers`) redirects to `/stickers/gallery` as the default view.
 
 These changes should be applied without affecting other menu sections (e.g., Calendar, Saints).
 
@@ -39,7 +39,7 @@ The Gallery page (`/stickers/gallery`) serves as the primary interface for brows
 ### UI Interface Design
 
 - **Overall Layout**:
-  - **Header**: App header with breadcrumb navigation (e.g., Home > Stickers > Gallery).
+  - **Header**: App header with breadcrumb navigation (e.g., Home > Sticker Box > Gallery).
   - **Search Bar at Top**: A prominent, full-width search input with filters. Use the existing [`components/ui/input.tsx`](components/ui/input.tsx) and [`components/ui/select.tsx`](components/ui/select.tsx) components.
   - **Filters Sidebar (Collapsible on Mobile)**: Optional sidebar for advanced filters, integrated with the main content area using responsive Tailwind classes (e.g., `md:flex`).
   - **Main Content**: Grid of sticker cards below the search bar, paginated for performance.
@@ -63,7 +63,7 @@ The Gallery page (`/stickers/gallery`) serves as the primary interface for brows
 - **Mockup Description (ASCII Art)**:
   ```
   +---------------------------------------------------+
-  | Header: Saint Calendar > Stickers > Gallery       |
+  | Header: Saint Calendar > Sticker Box > Gallery       |
   +---------------------------------------------------+
   | Search Bar: [Search stickers...]  [Search Button] |
   | Filters: Saint: [Dropdown]  Year: [Slider]        |
@@ -96,7 +96,7 @@ The Templates page (`/stickers/templates`) provides users with predefined sticke
 ### UI Designs
 
 - **Overall Layout**:
-  - **Header**: Breadcrumb (Home > Stickers > Templates).
+  - **Header**: Breadcrumb (Home > Sticker Box > Templates).
   - **Main Content**: Card-based list of sticker sizes, each with description, dimensions, and external links.
   - **Sidebar (Optional)**: Quick links to recommended sites or size calculator.
   - **Footer**: Call-to-action for Gallery integration (e.g., "Browse stickers to customize").
@@ -110,7 +110,7 @@ The Templates page (`/stickers/templates`) provides users with predefined sticke
 - **Mockup Description (ASCII Art)**:
   ```
   +---------------------------------------------------+
-  | Header: Saint Calendar > Stickers > Templates     |
+  | Header: Saint Calendar > Sticker Box > Templates     |
   +---------------------------------------------------+
   | Introduction: Choose a sticker size and customize |
   | with saints from the Gallery.                     |
@@ -156,4 +156,4 @@ The Templates page (`/stickers/templates`) provides users with predefined sticke
   - Meta tags: Update page titles/descriptions for `/stickers/gallery` and `/stickers/templates`.
   - Error Handling: Graceful fallbacks for API failures (e.g., offline mode showing cached stickers).
 
-This design ensures the sticker pages are intuitive, searchable, and integrated seamlessly with the Saint Calendar app. Future expansions could include user-generated templates or advanced filtering.
+This design ensures the Sticker Box pages are intuitive, searchable, and integrated seamlessly with the Saint Calendar app. Future expansions could include user-generated templates or advanced filtering.

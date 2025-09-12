@@ -88,7 +88,7 @@ export default function ClientGallery() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Stickers Gallery</h1>
+        <h1 className="text-3xl font-bold mb-2">Sticker Box Gallery</h1>
         <p className="text-muted-foreground">Browse and search stickers by Saint Name, Year, and Location.</p>
       </div>
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ExternalLink, ImageIcon, ChevronDown } from "lucide-react"
@@ -55,7 +55,7 @@ export function SaintProfileModal({ isOpen, onOpenChange, saint }: SaintProfileM
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl">
+      <DialogContent className="max-w-6xl" aria-describedby="saint-profile-description">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -65,6 +65,9 @@ export function SaintProfileModal({ isOpen, onOpenChange, saint }: SaintProfileM
               <span>{saint.saintName}</span>
             </div>
           </DialogTitle>
+          <DialogDescription id="saint-profile-description" className="text-gray-600 mt-2">
+            Detailed profile information for {saint.saintName} including historical events, milestones, and statistics.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

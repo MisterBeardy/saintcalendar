@@ -100,16 +100,16 @@ export function SaintInformationSection({
     switch (activeSubSection) {
       case "saints-recent":
         // Show last 5 saints by sainted year (most recent first)
-        return saints.sort((a, b) => b.saintYear - a.saintYear).slice(0, 5)
+        return filteredSaints.sort((a, b) => b.saintYear - a.saintYear).slice(0, 5)
 
       case "saints-milestones":
         // Show saints with milestone achievements (2000+ beers)
-        return saints.filter((saint) => saint.totalBeers >= 2000).sort((a, b) => b.totalBeers - a.totalBeers)
+        return filteredSaints.filter((saint) => saint.totalBeers >= 2000).sort((a, b) => b.totalBeers - a.totalBeers)
 
       case "saints-all":
       default:
         // All saints mode - show all saints
-        return saints
+        return filteredSaints
     }
   }
 

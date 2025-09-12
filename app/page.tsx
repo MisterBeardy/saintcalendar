@@ -119,10 +119,10 @@ export default function SaintsCalendarApp() {
           baseInfo.submenuLabel = "Sticker Gallery"
           baseInfo.submenuDescription = "Browse all available stickers"
         } else if (activeSection === "stickers-search") {
-          baseInfo.submenuLabel = "Search Stickers"
+          baseInfo.submenuLabel = "Search Sticker Box"
           baseInfo.submenuDescription = "Find specific stickers"
         } else if (activeSection === "stickers-favorites") {
-          baseInfo.submenuLabel = "Favorite Stickers"
+          baseInfo.submenuLabel = "Favorite Sticker Box"
           baseInfo.submenuDescription = "Your saved sticker collection"
         } else {
           baseInfo.submenuLabel = "Sticker Collection"

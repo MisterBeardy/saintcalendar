@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 import { Check, X, Eye, Search } from "lucide-react"
 
 interface StickerSubmission {
@@ -181,9 +181,12 @@ export function StickerManagement() {
                               <Eye className="h-3 w-3" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent aria-describedby="sticker-review-description">
                             <DialogHeader>
                               <DialogTitle>Review Submission</DialogTitle>
+                              <DialogDescription id="sticker-review-description" className="text-gray-600 mt-2">
+                                Review sticker submission details including saint information and submission data.
+                              </DialogDescription>
                             </DialogHeader>
                             {selectedSubmission && (
                               <div className="space-y-4">

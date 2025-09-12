@@ -1,12 +1,10 @@
 "use client"
 
-"use client"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight, Calendar, Beer } from "lucide-react"
-import { EventDetailsModal } from "@/components/modals/event-details-modal"
+import { ChevronLeft, ChevronRight, Calendar, Beer, MapPin, UtensilsCrossed, User } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 interface SaintEvent {
   id: string
@@ -19,6 +17,44 @@ interface SaintEvent {
   saintNumber: number | null
 }
 
+interface Beer {
+  name: string
+  type: 'tap' | 'can'
+  brewery?: string
+  description?: string
+}
+
+interface EventDetails {
+  id: string
+  title: string
+  date: number
+  beersCount: number
+  eventType: string
+  saintNumber?: string
+  saintedYear?: number
+  month?: number
+  saintName?: string
+  realName?: string
+  sticker?: string
+  burger?: string
+  burgers?: number
+  burgerToppings?: string[]
+  facebookEvent?: string
+  location?: {
+    displayName: string
+    state: string
+  }
+  saint?: {
+    name: string
+  }
+  tapBeers?: number
+  canBottleBeers?: number
+  tapBeerList?: string[]
+  canBottleBeerList?: string[]
+  milestoneCount?: number
+  year?: number
+}
+
 export function WeekView() {
     const initialWeek = new Date()
     console.log('[WeekView] Initial week set to:', initialWeek.toISOString())
@@ -26,8 +62,9 @@ export function WeekView() {
     const [currentWeek, setCurrentWeek] = useState(initialWeek)
     const [events, setEvents] = useState<SaintEvent[]>([])
     const [loading, setLoading] = useState(true)
-    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
-    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [expandedEventId, setExpandedEventId] = useState<string | null>(null)
+    const [detailedEvent, setDetailedEvent] = useState<EventDetails | null>(null)
+    const [detailedEventLoading, setDetailedEventLoading] = useState(false)
 
   const parseYYYYMMDD = (dateInt: number): Date => {
     const year = Math.floor(dateInt / 10000)
@@ -74,7 +111,7 @@ export function WeekView() {
         console.log(`[WeekView] Received ${data.length} events from API for current week`)
 
         const transformedEvents = data.map((event: any) => ({
-          id: event.id,
+          id: String(event.id),
           name: event.saint?.name || 'Unknown',
           date: parseYYYYMMDD(event.date),
           location: event.location?.displayName || 'Unknown',
@@ -108,6 +145,40 @@ export function WeekView() {
     return dates
   }
 
+  const fetchEventDetails = async (eventId: string) => {
+    if (!eventId) return
+
+    setDetailedEventLoading(true)
+    try {
+      const response = await fetch(`/api/events?id=${eventId}`)
+      if (response.ok) {
+        const data = await response.json()
+        // Transform data to match EventDetails interface
+        const transformedData: EventDetails = {
+          ...data,
+          beersCount: data.beers || 0
+        }
+        setDetailedEvent(transformedData)
+      } else {
+        console.error('Failed to fetch event details:', response.status, response.statusText)
+        setDetailedEvent(null)
+      }
+    } catch (error) {
+      console.error('Error fetching event details:', error)
+      setDetailedEvent(null)
+    } finally {
+      setDetailedEventLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (expandedEventId) {
+      fetchEventDetails(expandedEventId)
+    } else {
+      setDetailedEvent(null)
+    }
+  }, [expandedEventId])
+
   const weekDates = getWeekDates(currentWeek)
   const weekStart = weekDates[0]
   const weekEnd = weekDates[6]
@@ -129,9 +200,35 @@ export function WeekView() {
     return `${weekStart.toLocaleDateString("en-US", options)} - ${weekEnd.toLocaleDateString("en-US", options)}`
   }
 
+  const formatDetailedDate = (dateInt: number) => {
+    const year = Math.floor(dateInt / 10000)
+    const month = Math.floor((dateInt % 10000) / 100)
+    const day = dateInt % 100
+    const date = new Date(year, month - 1, day)
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const isHistoricalEvent = (dateInt: number) => {
+    const today = new Date()
+    const eventYear = Math.floor(dateInt / 10000)
+    const eventMonth = Math.floor((dateInt % 10000) / 100)
+    const eventDay = dateInt % 100
+    const eventDate = new Date(eventYear, eventMonth - 1, eventDay)
+    return eventDate < today
+  }
+
   const handleEventClick = (eventId: string) => {
-    setSelectedEventId(eventId)
-    setIsModalOpen(true)
+    if (!eventId) {
+      console.error('handleEventClick called with invalid eventId:', eventId)
+      return
+    }
+    console.log('handleEventClick called with eventId:', eventId)
+    setExpandedEventId(expandedEventId === eventId ? null : eventId)
   }
 
   return (
@@ -235,11 +332,199 @@ export function WeekView() {
         </CardContent>
       </Card>
 
-      <EventDetailsModal
-        isOpen={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        eventId={selectedEventId}
-      />
+      {/* Inline Event Details */}
+      {expandedEventId && (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Calendar className="h-6 w-6 text-blue-600" />
+              </div>
+              Event Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {detailedEventLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-pulse flex space-x-4">
+                  <div className="rounded-full bg-gray-200 h-8 w-8"></div>
+                  <div className="flex-1 space-y-2 py-1">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+              </div>
+            ) : detailedEvent ? (
+              <div className="space-y-4">
+                {/* Saint and Date Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                          #{detailedEvent.saintNumber}
+                        </div>
+                        <div>
+                          <div className="font-medium">{detailedEvent.saintName || detailedEvent.saint?.name}</div>
+                          <div className="text-sm text-muted-foreground">{detailedEvent.realName}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium text-primary">{detailedEvent.beersCount} beers</div>
+                        <div className="text-xs text-muted-foreground">{detailedEvent.milestoneCount || 0} milestones</div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {detailedEvent.location ? `${detailedEvent.location.displayName}, ${detailedEvent.location.state}` : 'Unknown'} • Sainted: {detailedEvent.saintedYear}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-800">Event Date</div>
+                        <div className="font-medium text-lg text-gray-800">{formatDetailedDate(detailedEvent.date)}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Burger and Beer Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-r from-green-50 to-lime-50 p-4 rounded-xl border border-green-100">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <UtensilsCrossed className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div className="font-semibold text-gray-800">Burger Information</div>
+                    </div>
+                    <div className="space-y-2">
+                      {detailedEvent.burgers && detailedEvent.burger ? (
+                        <div>
+                          <div className="font-medium text-sm text-gray-700">
+                            {detailedEvent.burger}{detailedEvent.burgers ? ` (${detailedEvent.burgers})` : ''}
+                          </div>
+                          {(() => {
+                            let toppings: string[] = [];
+                            if (detailedEvent.burgerToppings && detailedEvent.burgerToppings.length > 0) {
+                              toppings = detailedEvent.burgerToppings;
+                            } else if (detailedEvent.burger && detailedEvent.burger.includes(':')) {
+                              const parts = detailedEvent.burger.split(':');
+                              if (parts.length > 1) {
+                                toppings = parts[1].split(',').map(t => t.trim());
+                              }
+                            }
+                            if (toppings.length > 0) {
+                              return (
+                                <ul className="space-y-1">
+                                  {toppings.map((topping, index) => (
+                                    <li key={index} className="text-sm text-gray-600">• {topping}</li>
+                                  ))}
+                                </ul>
+                              );
+                            } else {
+                              return <div className="text-sm text-gray-600">No toppings specified</div>;
+                            }
+                          })()}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-600">No burger information available</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-100">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-amber-100 rounded-lg">
+                        <Beer className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div className="font-semibold text-gray-800">Beer Information</div>
+                    </div>
+                    <div className="space-y-2">
+                      {detailedEvent.tapBeerList && detailedEvent.tapBeerList.length > 0 && (
+                        <div>
+                          <div className="font-medium text-sm text-gray-700">
+                            Tap Beers{detailedEvent.tapBeers ? ` (${detailedEvent.tapBeers})` : ''}
+                          </div>
+                          <ul className="space-y-1">
+                            {detailedEvent.tapBeerList.map((beer, index) => (
+                              <li key={index} className="text-sm text-gray-600">• {beer}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {detailedEvent.canBottleBeerList && detailedEvent.canBottleBeerList.length > 0 && (
+                        <div>
+                          <div className="font-medium text-sm text-gray-700">
+                            Can/Bottle Beers{detailedEvent.canBottleBeers ? ` (${detailedEvent.canBottleBeers})` : ''}
+                          </div>
+                          <ul className="space-y-1">
+                            {detailedEvent.canBottleBeerList.map((beer, index) => (
+                              <li key={index} className="text-sm text-gray-600">• {beer}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {(!detailedEvent.tapBeerList || detailedEvent.tapBeerList.length === 0) &&
+                       (!detailedEvent.canBottleBeerList || detailedEvent.canBottleBeerList.length === 0) && (
+                        <div className="text-sm text-gray-600">No beer information available</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Details Row */}
+                {(detailedEvent.sticker || detailedEvent.facebookEvent || detailedEvent.year) && (
+                  <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 rounded-xl border border-gray-100">
+                    <div className="font-semibold text-gray-800 mb-3">Additional Details</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {detailedEvent.sticker && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Sticker:</span>
+                          <span className="font-medium text-gray-800">{detailedEvent.sticker}</span>
+                        </div>
+                      )}
+                      {detailedEvent.facebookEvent && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Facebook Event:</span>
+                          <span className="font-medium text-gray-800">
+                            {detailedEvent.facebookEvent.startsWith('http') ? (
+                              <a
+                                href={detailedEvent.facebookEvent}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                Link
+                              </a>
+                            ) : (
+                              detailedEvent.facebookEvent
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      {detailedEvent.year && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Year:</span>
+                          <span className="font-medium text-gray-800">{detailedEvent.year}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-400 text-lg mb-2">📅</div>
+                <div className="text-sm text-gray-500">Event details not found</div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

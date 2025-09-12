@@ -105,11 +105,12 @@ export function MonthView({ events: propEvents, currentDate: propCurrentDate, on
   }, [currentDate])
 
   // Update current date when prop changes
-  useEffect(() => {
-    if (propCurrentDate) {
-      setCurrentDate(propCurrentDate)
-    }
-  }, [propCurrentDate])
+   useEffect(() => {
+     if (propCurrentDate) {
+       console.log('[MonthView] Prop currentDate changed to:', propCurrentDate.toISOString())
+       setCurrentDate(propCurrentDate)
+     }
+   }, [propCurrentDate])
 
   const monthNames = [
     "January",

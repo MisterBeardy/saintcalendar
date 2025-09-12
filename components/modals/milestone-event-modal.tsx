@@ -1,6 +1,6 @@
 "use client"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ExternalLink, ImageIcon } from "lucide-react"
 import type { MilestoneEvent } from "@/types/saint-events"
@@ -34,7 +34,7 @@ export function MilestoneEventModal({ isOpen, onOpenChange, event, onViewSaintDe
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl">
+      <DialogContent className="max-w-6xl" aria-describedby="milestone-event-description">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -44,6 +44,9 @@ export function MilestoneEventModal({ isOpen, onOpenChange, event, onViewSaintDe
               <span>{event.saintName}</span>
             </div>
           </DialogTitle>
+          <DialogDescription id="milestone-event-description" className="text-gray-600 mt-2">
+            Milestone achievement details for {event.saintName} including beer count and commemorative information.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

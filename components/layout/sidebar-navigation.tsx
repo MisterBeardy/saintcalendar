@@ -44,7 +44,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     id: "stickers",
-    label: "Stickers",
+    label: "Sticker Box",
     icon: ImageIcon,
     description: "Sticker gallery",
     subItems: [
@@ -145,6 +145,7 @@ export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNa
 
     if (item.subItems) {
       toggleSection(item.id)
+      setActiveSection(item.subItems[0].id)
     } else {
       setActiveSection(item.id)
     }

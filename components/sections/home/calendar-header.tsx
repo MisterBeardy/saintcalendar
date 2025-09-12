@@ -1,8 +1,9 @@
 "use client"
 
-"use client"
-
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Event } from "@/lib/generated/prisma"
 
 interface CalendarHeaderProps {
@@ -14,6 +15,15 @@ interface CalendarHeaderProps {
 }
 
 export function CalendarHeader({ currentDate, setCurrentDate, viewMode = "month", events = [], loading = false }: CalendarHeaderProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth())
+
+  useEffect(() => {
+    setSelectedYear(currentDate.getFullYear())
+    setSelectedMonth(currentDate.getMonth())
+  }, [currentDate])
+
   const monthNames = [
     "January",
     "February",
@@ -87,11 +97,63 @@ export function CalendarHeader({ currentDate, setCurrentDate, viewMode = "month"
           <Button variant="outline" onClick={() => (viewMode === "week" ? navigateWeek("prev") : navigateMonth("prev"))}>
             ←
           </Button>
-          <h3 className="text-xl font-heading font-semibold">
-            {viewMode === "week"
-              ? getWeekRange(currentDate)
-              : `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`}
-          </h3>
+          {viewMode === "week" ? (
+            <h3 className="text-xl font-heading font-semibold">
+              {getWeekRange(currentDate)}
+            </h3>
+          ) : (
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+              <PopoverTrigger asChild>
+                <h3 className="text-xl font-heading font-semibold cursor-pointer hover:text-primary transition-colors">
+                  {`${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`}
+                </h3>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium">Month</label>
+                    <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {monthNames.map((month, index) => (
+                          <SelectItem key={index} value={index.toString()}>
+                            {month}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-sm font-medium">Year</label>
+                    <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 11 }, (_, i) => 2020 + i).map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex justify-end mt-4">
+                  <Button onClick={() => {
+                    const newDate = new Date(selectedYear, selectedMonth, 1)
+                    console.log('[CalendarHeader] Selecting new date:', newDate.toISOString(), 'from year:', selectedYear, 'month:', selectedMonth)
+                    setCurrentDate(newDate)
+                    setIsOpen(false)
+                  }}>
+                    Select
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
           <Button variant="outline" onClick={() => (viewMode === "week" ? navigateWeek("next") : navigateMonth("next"))}>
             →
           </Button>

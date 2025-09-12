@@ -35,7 +35,7 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
         const startDateStr = startOfMonth.toISOString().split('T')[0]
         const endDateStr = endOfMonth.toISOString().split('T')[0]
 
-        console.log(`[HomeSection] Current date: ${currentDate.toISOString()}`)
+        console.log(`[HomeSection] Current date changed to: ${currentDate.toISOString()}`)
         console.log(`[HomeSection] Fetching events for current month: ${startDateStr} to ${endDateStr}`)
         console.log(`[HomeSection] dataSource prop: ${dataSource}`)
 
