@@ -20,6 +20,18 @@ enum LocationStatus {
   CLOSED
 }
 
+enum PendingChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PendingChangeEntityType {
+  LOCATION
+  SAINT
+  STICKER
+}
+
 model Location {
   id            String   @id
   state         String
@@ -116,6 +128,23 @@ model Sticker {
   year        Int?
   imageUrl    String?
   type        String?
+}
+
+model PendingChange {
+  id            String                   @id @default(cuid())
+  entityType    PendingChangeEntityType
+  entityId      String
+  changes       Json
+  status        PendingChangeStatus      @default(PENDING)
+  requestedBy   String?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  @@index([entityType, entityId])
+  @@index([status, createdAt])
+  @@index([requestedBy])
 }
 
 model Job {

@@ -44,23 +44,29 @@ export function StateVsStateChart({ selectedLocation, dataSource }: StateVsState
     fetchLocations()
   }, [])
 
-  // Get unique states from fetched locations
-  const availableStates = Array.from(new Set(locations.map(loc => loc.state))).sort()
-  
+  // Filter locations based on selectedLocation
+  const filteredLocations = selectedLocation && selectedLocation !== "All Locations"
+    ? locations.filter(loc => loc.displayName === selectedLocation)
+    : locations
+
+  // Get unique states from filtered locations
+  const availableStates = Array.from(new Set(filteredLocations.map(loc => loc.state))).sort()
+
   // Debug logging
   console.log("StateVsStateChart - availableStates:", availableStates)
-  console.log("StateVsStateChart - locations count:", locations.length)
+  console.log("StateVsStateChart - filtered locations count:", filteredLocations.length)
+  console.log("StateVsStateChart - selectedLocation:", selectedLocation)
   console.log("StateVsStateChart - dataSource:", dataSource)
 
   const stateComparison = availableStates.map(state => {
-    const stateLocations = locations.filter(loc => loc.state === state)
+    const stateLocations = filteredLocations.filter(loc => loc.state === state)
     const totalSaints = stateLocations.reduce((sum, loc) => sum + (loc.saints?.length || 0), 0)
     const totalBeers = stateLocations.reduce((sum, loc) => {
       if (!loc.saints || !Array.isArray(loc.saints)) return sum;
       return sum + loc.saints.reduce((saintSum, saint) => saintSum + (saint.totalBeers || 0), 0);
     }, 0)
     const avgBeers = totalSaints > 0 ? Math.round(totalBeers / totalSaints) : 0
-    
+
     return {
       state,
       saints: totalSaints,

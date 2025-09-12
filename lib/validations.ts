@@ -14,3 +14,30 @@ export const databaseEntrySchema = z.object({
   createdAt: z.date().optional(),
   updatedAt: z.date().optional()
 })
+
+// Pending Changes validation schemas
+export const pendingChangeEntityTypeSchema = z.enum(['LOCATION', 'SAINT', 'STICKER'])
+
+export const pendingChangeStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED'])
+
+export const createPendingChangeSchema = z.object({
+  entityType: pendingChangeEntityTypeSchema,
+  entityId: z.string().min(1),
+  changes: z.record(z.string(), z.unknown()), // JSON object for changes
+  requestedBy: z.string().optional()
+})
+
+export const updatePendingChangeSchema = z.object({
+  changes: z.record(z.string(), z.unknown()).optional(),
+  status: pendingChangeStatusSchema.optional(),
+  reviewedBy: z.string().optional()
+})
+
+export const pendingChangeQuerySchema = z.object({
+  entityType: pendingChangeEntityTypeSchema.optional(),
+  entityId: z.string().optional(),
+  status: pendingChangeStatusSchema.optional(),
+  requestedBy: z.string().optional(),
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(10)
+})

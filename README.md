@@ -49,11 +49,14 @@ The application offers multiple calendar views to suit different needs:
 - **Dark/Light Mode**: Automatic and manual theme switching
 - **Responsive Layouts**: Adapts to different screen sizes
 - **Accessible Components**: Follows accessibility best practices
+- **Enhanced Event Details Modal**: Card-based layout with improved error handling for better user experience
+- **Sticker Box Functionality**: Renamed from "stickers" with enhanced accessibility features for event details
 
 ### Data Management
 
-- **Database Integration**: Full PostgreSQL database with Prisma ORM
-- **Script-Based Imports**: Automated import scripts for data synchronization
+- **Database Integration**: Full PostgreSQL database with Prisma ORM, including recent fixes for improved functionality and reliability
+- **Script-Based Imports**: Automated import scripts for data synchronization, with ongoing development of verification and import scripts
+- **Database Cleanup**: Web interface for removing database-related issues and managing data integrity
 - **Sample Data**: Pre-loaded sample data for testing and development
 - **Real-time Updates**: Live data synchronization between sources
 
@@ -496,6 +499,10 @@ This project is licensed under the MIT License.
 - **Monitoring Infrastructure**: Error tracking, performance monitoring, and health checks
 - **Deployment Guides**: Comprehensive documentation for Docker, CI/CD, and production deployment
 - **Testing Framework**: Automated scripts and validation for import/export operations
+- **Enhanced Event Details Modal**: Card-based layout with improved error handling for better user experience
+- **Sticker Box Functionality**: Renamed from "stickers" with enhanced accessibility features for event details
+- **Database Fixes**: Resolved database functionality issues and improved reliability
+- **Import Script Updates**: Ongoing development of verification and import scripts for data management
 
 ### Planned Features
 

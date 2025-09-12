@@ -3,6 +3,10 @@ import type { Saint, Location, Sticker } from './types'
 
 export type { Saint, Location, Sticker }
 
-export default function GalleryPage() {
-  return <ClientGallery />
+interface GalleryPageProps {
+  selectedLocation: string
+}
+
+export default function GalleryPage({ selectedLocation }: GalleryPageProps) {
+  return <ClientGallery selectedLocation={selectedLocation} />
 }

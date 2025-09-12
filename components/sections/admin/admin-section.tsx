@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Phase4ImportPanel } from "@/components/admin/phase4-import-panel"
+import { PendingChangesApproval } from "@/components/admin/pending-changes-approval"
+import { Milestone } from "@/lib/generated/prisma"
 
 interface AdminSectionProps {
   selectedLocation: string
@@ -63,10 +65,16 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
   const [isAddSaintOpen, setIsAddSaintOpen] = useState(false)
   const [isEditSaintOpen, setIsEditSaintOpen] = useState(false)
   const [isViewSaintOpen, setIsViewSaintOpen] = useState(false)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [isPendingChangesOpen, setIsPendingChangesOpen] = useState(false)
   const [selectedSaint, setSelectedSaint] = useState<any>(null)
+  const [saintToDelete, setSaintToDelete] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [loadingEdit, setLoadingEdit] = useState(false)
+  const [errorEdit, setErrorEdit] = useState<string | null>(null)
+  const [loadingDelete, setLoadingDelete] = useState(false)
+  const [errorDelete, setErrorDelete] = useState<string | null>(null)
 
   // Fetch change log from database
   const [changeLog, setChangeLog] = useState<any[]>([])
@@ -94,61 +102,51 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
     name: "",
     saintName: "",
     saintDate: "",
-    location: "",
+    location: null,
     status: "active",
     email: "",
     phone: "",
     notes: "",
   })
 
-  // Fetch pending changes from database
-  const [pendingChanges, setPendingChanges] = useState<any[]>([])
-  const [loadingPendingChanges, setLoadingPendingChanges] = useState(true)
-
-  useEffect(() => {
-    const fetchPendingChanges = async () => {
-      try {
-        const response = await fetch('/api/pending-changes')
-        if (response.ok) {
-          const data = await response.json()
-          setPendingChanges(data.pendingChanges || [])
-        }
-      } catch (error) {
-        console.error('Failed to fetch pending changes:', error)
-      } finally {
-        setLoadingPendingChanges(false)
-      }
-    }
-
-    fetchPendingChanges()
-  }, [])
-
   const [saints, setSaints] = useState<any[]>([])
   const [loadingSaints, setLoadingSaints] = useState(true)
 
-  useEffect(() => {
-    const fetchSaints = async () => {
-      try {
-        const response = await fetch('/api/saints')
-        if (response.ok) {
-          const data = await response.json()
-          setSaints(data)
-        }
-      } catch (error) {
-        console.error('Failed to fetch saints:', error)
-      } finally {
-        setLoadingSaints(false)
+  const fetchSaints = async () => {
+    try {
+      const response = await fetch('/api/saints')
+      if (response.ok) {
+        const data = await response.json()
+        setSaints(data)
       }
+    } catch (error) {
+      console.error('Failed to fetch saints:', error)
+    } finally {
+      setLoadingSaints(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchSaints()
+  }, [])
+
+  useEffect(() => {
+    const handleSaintsDataChanged = () => {
+      fetchSaints()
     }
 
-    fetchSaints()
+    window.addEventListener('saints-data-changed', handleSaintsDataChanged)
+
+    return () => {
+      window.removeEventListener('saints-data-changed', handleSaintsDataChanged)
+    }
   }, [])
 
   const filteredSaints = Array.isArray(saints) ? saints.filter((saint) => {
     const matchesSearch =
       saint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       saint.saintName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      saint.location.toLowerCase().includes(searchTerm.toLowerCase())
+      (saint.location ? `${saint.location.state} - ${saint.location.city}`.toLowerCase().includes(searchTerm.toLowerCase()) : false)
     const matchesStatus = statusFilter === "all" || saint.status === statusFilter
     return matchesSearch && matchesStatus
   }) : []
@@ -166,7 +164,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
       name: "",
       saintName: "",
       saintDate: "",
-      location: "",
+      location: null,
       status: "active",
       email: "",
       phone: "",
@@ -175,7 +173,10 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
     setIsAddSaintOpen(false)
   }
 
-  const handleEditSaint = () => {
+  const handleEditSaint = async () => {
+    setLoadingEdit(true)
+    setErrorEdit(null)
+
     const currentSaints = Array.isArray(saints) ? saints : []
     const originalSaint = currentSaints.find((s) => s.id === selectedSaint.id)
     const changes: any = {}
@@ -187,28 +188,92 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
     })
 
     if (Object.keys(changes).length > 0) {
-      const currentPendingChanges = Array.isArray(pendingChanges) ? pendingChanges : []
       const newPendingChange = {
-        id: currentPendingChanges.length + 1,
-        saintId: selectedSaint.id,
-        saintName: selectedSaint.name,
-        changeType: "edit",
+        entityType: "SAINT",
+        entityId: selectedSaint.id,
         changes,
-        submittedBy: "Current User",
-        submittedDate: new Date().toISOString().split("T")[0],
-        status: "pending",
-        comments: [],
+        requestedBy: "Current User",
       }
-      setPendingChanges([...currentPendingChanges, newPendingChange])
+
+      try {
+        const response = await fetch('/api/pending-changes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newPendingChange),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to submit changes for approval')
+        }
+
+        // Refetch pending changes to update the list
+        const fetchResponse = await fetch('/api/pending-changes')
+        if (fetchResponse.ok) {
+          const data = await fetchResponse.json()
+        }
+
+        setIsEditSaintOpen(false)
+        setSelectedSaint(null)
+      } catch (error) {
+        console.error('Error submitting changes:', error)
+        setErrorEdit(error instanceof Error ? error.message : 'An error occurred while submitting changes')
+      }
+    } else {
+      setIsEditSaintOpen(false)
+      setSelectedSaint(null)
     }
 
-    setIsEditSaintOpen(false)
-    setSelectedSaint(null)
+    setLoadingEdit(false)
   }
 
-  const handleDeleteSaint = (saintId: number) => {
-    const currentSaints = Array.isArray(saints) ? saints : []
-    setSaints(currentSaints.filter((saint) => saint.id !== saintId))
+  const handleDeleteSaint = async () => {
+    if (!saintToDelete) return
+
+    setLoadingDelete(true)
+    setErrorDelete(null)
+
+    const newPendingChange = {
+      entityType: "SAINT",
+      entityId: saintToDelete.id,
+      changes: { action: "delete" },
+      requestedBy: "Current User",
+    }
+
+    try {
+      const response = await fetch('/api/pending-changes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newPendingChange),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit delete request for approval')
+      }
+
+      // Refetch pending changes to update the list
+      const fetchResponse = await fetch('/api/pending-changes')
+      if (fetchResponse.ok) {
+        const data = await fetchResponse.json()
+      }
+
+      setIsDeleteConfirmOpen(false)
+      setSaintToDelete(null)
+    } catch (error) {
+      console.error('Error submitting delete request:', error)
+      setErrorDelete(error instanceof Error ? error.message : 'An error occurred while submitting the delete request')
+    } finally {
+      setLoadingDelete(false)
+    }
+  }
+
+  const handleDeleteClick = (saint: any) => {
+    setSaintToDelete(saint)
+    setIsDeleteConfirmOpen(true)
+    setErrorDelete(null)
   }
 
   const handleViewSaint = (saint: any) => {
@@ -243,19 +308,6 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
     fetchLocations()
   }, [])
 
-  const handleApprovePendingChange = (changeId: number) => {
-    const change = Array.isArray(pendingChanges) ? pendingChanges.find((c) => c.id === changeId) : null
-    if (change) {
-      const currentSaints = Array.isArray(saints) ? saints : []
-      setSaints(currentSaints.map((saint) => (saint.id === change.saintId ? { ...saint, ...change.changes } : saint)))
-
-      setPendingChanges(Array.isArray(pendingChanges) ? pendingChanges.map((c) => (c.id === changeId ? { ...c, status: "approved" } : c)) : [])
-    }
-  }
-
-  const handleRejectPendingChange = (changeId: number) => {
-    setPendingChanges(Array.isArray(pendingChanges) ? pendingChanges.map((c) => (c.id === changeId ? { ...c, status: "rejected" } : c)) : [])
-  }
 
   // Fetch overview data from database
   const [overviewData, setOverviewData] = useState({
@@ -323,6 +375,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
   const renderSaintManagement = activeTab === "saints"
   const renderStickerManagement = activeTab === "stickers"
   const renderLocationManagement = activeTab === "locations"
+  const renderPendingChanges = activeTab === "pending"
   const renderChangeLog = activeTab === "changelog"
   const renderDatabaseImport = activeTab === "database-import"
 
@@ -431,8 +484,11 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                     <div>
                       <Label htmlFor="location">Location</Label>
                       <Select
-                        value={newSaint.location}
-                        onValueChange={(value) => setNewSaint({ ...newSaint, location: value })}
+                        value={newSaint.location ? (newSaint.location.displayName || `${newSaint.location.state} - ${newSaint.location.city}`) : ""}
+                        onValueChange={(value) => {
+                          const loc = locations.find(l => `${l.state} - ${l.city}` === value);
+                          setNewSaint({ ...newSaint, location: loc });
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select location" />
@@ -521,7 +577,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                           <h4 className="font-medium">{saint.name}</h4>
                           <p className="text-sm text-muted-foreground">Saint Name: {saint.saintName}</p>
                           <p className="text-sm text-muted-foreground">Saint Date: {saint.saintDate}</p>
-                          <p className="text-sm text-muted-foreground">Location: {saint.location}</p>
+                          <p className="text-sm text-muted-foreground">Location: {saint.location ? (saint.location.displayName || `${saint.location.state} - ${saint.location.city}`) : ''}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-muted-foreground">Total Beers: {saint.totalBeers}</span>
                             <span className="text-xs text-muted-foreground">•</span>
@@ -537,7 +593,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                         <Button variant="outline" size="sm" onClick={() => handleEditClick(saint)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDeleteSaint(saint.id)}>
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteClick(saint)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -583,7 +639,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-muted-foreground">Location</Label>
-                        <p className="font-medium">{selectedSaint.location}</p>
+                        <p className="font-medium">{selectedSaint.location ? (selectedSaint.location.displayName || `${selectedSaint.location.state} - ${selectedSaint.location.city}`) : ''}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-muted-foreground">Total Beers</Label>
@@ -593,9 +649,9 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Milestones</Label>
                       <div className="flex gap-2 mt-1">
-                        {Array.isArray(selectedSaint.milestones) ? selectedSaint.milestones.map((milestone: string, index: number) => (
+                        {Array.isArray(selectedSaint.milestones) ? selectedSaint.milestones.map((milestone: Milestone, index: number) => (
                           <Badge key={index} variant="outline">
-                            {milestone}
+                            {milestone.count}
                           </Badge>
                         )) : null}
                       </div>
@@ -646,16 +702,19 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                     <div>
                       <Label htmlFor="edit-location">Location</Label>
                       <Select
-                        value={selectedSaint.location}
-                        onValueChange={(value) => setSelectedSaint({ ...selectedSaint, location: value })}
+                        value={selectedSaint.location?.displayName || ""}
+                        onValueChange={(value) => {
+                          const loc = locations.find(l => l.displayName === value);
+                          setSelectedSaint({ ...selectedSaint, location: loc });
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {Array.isArray(locations) ? locations.map((location) => (
-                            <SelectItem key={location.id} value={`${location.state} - ${location.city}`}>
-                              {location.state} - {location.city}
+                            <SelectItem key={location.id} value={location.displayName}>
+                              {location.displayName}
                             </SelectItem>
                           )) : null}
                         </SelectContent>
@@ -682,11 +741,63 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
                     </div>
                   </div>
                 )}
+                {errorEdit && (
+                  <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2 mt-4">
+                    {errorEdit}
+                  </div>
+                )}
                 <div className="flex justify-end gap-2 mt-4">
-                  <Button variant="outline" onClick={() => setIsEditSaintOpen(false)}>
+                  <Button variant="outline" onClick={() => setIsEditSaintOpen(false)} disabled={loadingEdit}>
                     Cancel
                   </Button>
-                  <Button onClick={handleEditSaint}>Save Changes</Button>
+                  <Button onClick={handleEditSaint} disabled={loadingEdit}>
+                    {loadingEdit ? "Submitting..." : "Save Changes"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Confirm Delete</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete {saintToDelete?.name}? This action will be submitted for approval.
+                  </DialogDescription>
+                </DialogHeader>
+                {saintToDelete && (
+                  <div className="space-y-4">
+                    <div className="bg-muted/30 rounded-lg p-3">
+                      <Label className="text-sm font-medium text-muted-foreground">Saint Details:</Label>
+                      <div className="mt-2 space-y-1">
+                        <div className="text-sm">
+                          <span className="font-medium">Name:</span> {saintToDelete.name}
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">Saint Name:</span> {saintToDelete.saintName}
+                        </div>
+                        <div className="text-sm">
+                          <span className="font-medium">Location:</span> {saintToDelete.location ? (saintToDelete.location.displayName || `${saintToDelete.location.state} - ${saintToDelete.location.city}`) : ''}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      This delete request will be submitted for approval and will not immediately remove the saint from the system.
+                    </div>
+                  </div>
+                )}
+                {errorDelete && (
+                  <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
+                    {errorDelete}
+                  </div>
+                )}
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)} disabled={loadingDelete}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={handleDeleteSaint} disabled={loadingDelete}>
+                    {loadingDelete ? "Submitting..." : "Submit Delete Request"}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -694,80 +805,7 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
         )}
 
         {renderStickerManagement && (
-          <div className="space-y-3">
-            <div>
-              <h3 className="text-lg font-heading font-semibold">Sticker Management</h3>
-              <p className="text-sm text-muted-foreground">Review and approve sticker submissions</p>
-            </div>
-
-            <div className="space-y-4">
-              {Array.isArray(pendingChanges) ? pendingChanges.map((change) => (
-                <Card key={change.id}>
-                  <CardContent className="p-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium">Changes to {change.saintName}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Submitted by {change.submittedBy} on {change.submittedDate}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              change.status === "approved"
-                                ? "default"
-                                : change.status === "rejected"
-                                ? "destructive"
-                                : "secondary"
-                            }
-                          >
-                            {change.status}
-                          </Badge>
-                          {change.status === "pending" && (
-                            <>
-                              <Button variant="outline" size="sm" onClick={() => handleApprovePendingChange(change.id)}>
-                                <Check className="h-4 w-4 text-green-600" />
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleRejectPendingChange(change.id)}>
-                                <X className="h-4 w-4 text-red-600" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="bg-muted/30 rounded-lg p-3">
-                        <Label className="text-sm font-medium text-muted-foreground">Proposed Changes:</Label>
-                        <div className="mt-2 space-y-1">
-                          {Object.entries(change.changes).map(([field, value]) => (
-                            <div key={field} className="text-sm">
-                              <span className="font-medium capitalize">{field}:</span>{" "}
-                              <span className="text-muted-foreground">→</span>{" "}
-                              <span className="font-medium">{String(value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {Array.isArray(change.comments) && change.comments.length > 0 && (
-                        <div>
-                          <Label className="text-sm font-medium text-muted-foreground">Comments:</Label>
-                          <div className="mt-1 space-y-2">
-                            {change.comments.map((comment: any, index: number) => (
-                              <div key={index} className="text-sm bg-muted/20 rounded p-2">
-                                <span className="font-medium">{comment.author}:</span> {comment.text}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )) : null}
-            </div>
-          </div>
+          <PendingChangesApproval />
         )}
 
         {renderLocationManagement && (
@@ -850,6 +888,10 @@ export function AdminSection({ selectedLocation, activeSubSection }: AdminSectio
               )) : null}
             </div>
           </div>
+        )}
+
+        {renderPendingChanges && (
+          <PendingChangesApproval />
         )}
 
         {renderChangeLog && (

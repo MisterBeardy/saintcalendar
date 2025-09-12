@@ -43,7 +43,7 @@ export function ContentRouter({ activeSection, selectedLocation, dataSource, set
         />
       )
     case isStickersGallery:
-      return <GalleryPage />
+      return <GalleryPage selectedLocation={selectedLocation} />
     case isStickersTemplates:
       return <TemplatesPage />
     case isStickersSection:

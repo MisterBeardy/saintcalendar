@@ -30,9 +30,10 @@ interface MonthViewProps {
   events: SaintEvent[]
   currentDate: Date
   onDateChange?: (date: Date) => void
+  selectedLocation?: string
 }
 
-export function MonthView({ events: propEvents, currentDate: propCurrentDate, onDateChange }: MonthViewProps) {
+export function MonthView({ events: propEvents, currentDate: propCurrentDate, onDateChange, selectedLocation }: MonthViewProps) {
     const initialDate = propCurrentDate || new Date()
     console.log('[MonthView] Initial date set to:', initialDate.toISOString())
     console.log('[MonthView] Current date is:', new Date().toISOString())
@@ -41,9 +42,15 @@ export function MonthView({ events: propEvents, currentDate: propCurrentDate, on
     const [loading, setLoading] = useState(true)
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [locations, setLocations] = useState<any[]>([])
 
-  // Fetch events from API when current date changes
+  // Fetch events from API when current date or selectedLocation changes
   useEffect(() => {
+    // Only fetch if locations are loaded (to avoid issues with locationId lookup)
+    if (locations.length === 0 && selectedLocation && selectedLocation !== "All Locations") {
+      return
+    }
+
     const fetchEvents = async () => {
       try {
         setLoading(true)
@@ -57,9 +64,21 @@ export function MonthView({ events: propEvents, currentDate: propCurrentDate, on
         const startDateStr = firstDay.toISOString().split('T')[0]
         const endDateStr = lastDay.toISOString().split('T')[0]
 
+        // Build query parameters
+        let queryParams = `startDate=${startDateStr}&endDate=${endDateStr}`
+
+        // Add locationId if a specific location is selected
+        if (selectedLocation && selectedLocation !== "All Locations") {
+          const location = locations.find(loc => loc.displayName === selectedLocation)
+          if (location) {
+            queryParams += `&locationId=${location.id}`
+            console.log(`[MonthView] Filtering by location: ${selectedLocation} (ID: ${location.id})`)
+          }
+        }
+
         console.log(`[MonthView] Fetching events for month ${startDateStr} to ${endDateStr}`)
 
-        const response = await fetch(`/api/events?startDate=${startDateStr}&endDate=${endDateStr}`)
+        const response = await fetch(`/api/events?${queryParams}`)
         console.log(`[MonthView] API response status: ${response.status}`)
 
         if (!response.ok) {
@@ -102,7 +121,7 @@ export function MonthView({ events: propEvents, currentDate: propCurrentDate, on
       }
     }
     fetchEvents()
-  }, [currentDate])
+  }, [currentDate, selectedLocation, locations])
 
   // Update current date when prop changes
    useEffect(() => {
@@ -111,6 +130,22 @@ export function MonthView({ events: propEvents, currentDate: propCurrentDate, on
        setCurrentDate(propCurrentDate)
      }
    }, [propCurrentDate])
+
+  // Fetch locations data
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/locations')
+        if (response.ok) {
+          const data = await response.json()
+          setLocations(data)
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error)
+      }
+    }
+    fetchLocations()
+  }, [])
 
   const monthNames = [
     "January",

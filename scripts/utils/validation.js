@@ -58,11 +58,29 @@ function isValidUrl(string) {
   }
 }
 
+/**
+ * Validate sticker reference format
+ */
+function isValidStickerReference(stickerRef) {
+  if (!stickerRef || typeof stickerRef !== 'string') return false;
+
+  const trimmed = stickerRef.trim();
+  if (trimmed === '') return false;
+
+  // Check for common image file extensions
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.svg', '.gif', '.webp'];
+  const hasImageExtension = imageExtensions.some(ext => trimmed.toLowerCase().endsWith(ext));
+
+  // Allow URLs or relative paths
+  return hasImageExtension || isValidUrl(trimmed) || trimmed.startsWith('/');
+}
+
 // Export functions
 export {
   isValidDate,
   isValidGoogleSheetId,
   arraysEqual,
   isValidYear,
-  isValidUrl
+  isValidUrl,
+  isValidStickerReference
 };

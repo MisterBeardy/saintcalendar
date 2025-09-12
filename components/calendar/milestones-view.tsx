@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import { useState, useEffect } from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -14,25 +15,110 @@ interface MilestoneData {
   label: string
 }
 
-const milestones: MilestoneData[] = [
-  { threshold: 1000, count: 15, icon: Trophy, color: "text-yellow-600", label: "1,000+ Club" },
-  { threshold: 2000, count: 8, icon: Medal, color: "text-gray-500", label: "2,000+ Elite" },
-  { threshold: 3000, count: 3, icon: Award, color: "text-amber-600", label: "3,000+ Masters" },
-  { threshold: 5000, count: 1, icon: Star, color: "text-purple-600", label: "5,000+ Legend" },
+interface MilestonesViewProps {
+  selectedLocation?: string | null
+}
+
+interface Saint {
+  id: string
+  name: string
+  totalBeers: number
+}
+
+interface Location {
+  id: string
+  displayName: string
+}
+
+const milestoneThresholds = [
+  { threshold: 1000, icon: Trophy, color: "text-yellow-600", label: "1,000+ Club" },
+  { threshold: 2000, icon: Medal, color: "text-gray-500", label: "2,000+ Elite" },
+  { threshold: 3000, icon: Award, color: "text-amber-600", label: "3,000+ Masters" },
+  { threshold: 5000, icon: Star, color: "text-purple-600", label: "5,000+ Legend" },
 ]
 
-const topPerformers = [
-  { name: "Saint Ale", count: 2103, rank: 1 },
-  { name: "Saint Porter", count: 1892, rank: 2 },
-  { name: "Saint Stout", count: 1456, rank: 3 },
-  { name: "Saint Hop", count: 1247, rank: 4 },
-  { name: "Saint Malt", count: 892, rank: 5 },
-]
+export function MilestonesView({ selectedLocation }: MilestonesViewProps) {
+  const [saints, setSaints] = useState<Saint[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
+  const [loading, setLoading] = useState(true)
 
-export function MilestonesView() {
-  const totalSaints = 86
-  const averageCount = 1247
-  const yearlyGrowth = 15
+  // Fetch locations on mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/locations')
+        if (response.ok) {
+          const data = await response.json()
+          setLocations(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch locations:', error)
+      }
+    }
+    fetchLocations()
+  }, [])
+
+  // Fetch saints when selectedLocation changes
+  useEffect(() => {
+    const fetchSaints = async () => {
+      setLoading(true)
+      try {
+        let url = '/api/saints'
+        if (selectedLocation && selectedLocation !== 'All Locations') {
+          const location = locations.find(loc => loc.displayName === selectedLocation)
+          if (location) {
+            url += `?location_id=${location.id}`
+          }
+        }
+
+        const response = await fetch(url)
+        if (response.ok) {
+          const data = await response.json()
+          setSaints(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch saints:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSaints()
+  }, [selectedLocation, locations])
+
+  // Calculate milestones dynamically
+  const calculateMilestones = (): MilestoneData[] => {
+    return milestoneThresholds.map(({ threshold, icon, color, label }) => {
+      const count = saints.filter(saint => saint.totalBeers >= threshold).length
+      return { threshold, count, icon, color, label }
+    })
+  }
+
+  const milestones = calculateMilestones()
+
+  // Calculate top performers
+  const topPerformers = saints
+    .sort((a, b) => b.totalBeers - a.totalBeers)
+    .slice(0, 5)
+    .map((saint, index) => ({
+      name: saint.name,
+      count: saint.totalBeers,
+      rank: index + 1
+    }))
+
+  const totalSaints = saints.length
+  const averageCount = totalSaints > 0 ? Math.round(saints.reduce((sum, saint) => sum + saint.totalBeers, 0) / totalSaints) : 0
+  const yearlyGrowth = 15 // Keep static for now
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">Beer Count Milestones</h2>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -46,7 +132,7 @@ export function MilestonesView() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {milestones.map((milestone) => {
           const Icon = milestone.icon
-          const percentage = (milestone.count / totalSaints) * 100
+          const percentage = totalSaints > 0 ? (milestone.count / totalSaints) * 100 : 0
 
           return (
             <Card key={milestone.threshold}>

@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const id = searchParams.get('id');
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
+  const locationId = searchParams.get('locationId');
 
   try {
     if (id) {
@@ -53,6 +54,11 @@ export async function GET(request: NextRequest) {
         console.log(`[API/Events] Date filter query:`, where.date);
       } else {
         console.log(`[API/Events] Fetching all events - no date filtering applied`);
+      }
+
+      if (locationId) {
+        where.locationId = locationId;
+        console.log(`[API/Events] Filtering events by locationId: ${locationId}`);
       }
 
       console.log(`[API/Events] Where clause: ${JSON.stringify(where)}`);

@@ -9,6 +9,7 @@ import { SaintDayEventModal } from "@/components/modals/saint-day-event-modal"
 import { MilestoneEventModal } from "@/components/modals/milestone-event-modal"
 import { MonthView } from "@/components/calendar/month-view"
 import type { SaintEvent, SaintDayEvent, MilestoneEvent } from "@/types/saint-events"
+import type { Location } from "@/types/location-data"
 import { Event } from "@/lib/generated/prisma"
 
 interface HomeSectionProps {
@@ -23,11 +24,13 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
    const [isSaintDayModalOpen, setIsSaintDayModalOpen] = useState(false)
    const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false)
    const [events, setEvents] = useState<Event[]>([])
+   const [locations, setLocations] = useState<Location[]>([])
    const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchData = async () => {
       try {
+        setLoading(true)
         // Calculate date range for current month view only
         const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
         const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
@@ -39,20 +42,34 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
         console.log(`[HomeSection] Fetching events for current month: ${startDateStr} to ${endDateStr}`)
         console.log(`[HomeSection] dataSource prop: ${dataSource}`)
 
-        const response = await fetch(`/api/events?startDate=${startDateStr}&endDate=${endDateStr}`)
-        const data = await response.json()
-        console.log(`[HomeSection] Received ${data.length} events from API for current month`)
-        console.log(`[HomeSection] First 3 events:`, data.slice(0, 3))
+        const locationsRes = await fetch('/api/locations').then(res => res.json())
+        setLocations(locationsRes)
 
-        setEvents(data)
+        // Determine locationId for API filtering
+        let locationId: string | undefined
+        if (selectedLocation && selectedLocation !== "All Locations") {
+          const location = locationsRes.find((loc: Location) => loc.displayName === selectedLocation)
+          if (location) {
+            locationId = location.id
+          }
+        }
+
+        // Construct events API URL with optional locationId
+        const eventsUrl = `/api/events?startDate=${startDateStr}&endDate=${endDateStr}${locationId ? `&locationId=${locationId}` : ''}`
+        const eventsRes = await fetch(eventsUrl).then(res => res.json())
+
+        console.log(`[HomeSection] Received ${eventsRes.length} events from API for current month`)
+        console.log(`[HomeSection] First 3 events:`, eventsRes.slice(0, 3))
+
+        setEvents(eventsRes)
       } catch (error) {
-        console.error('Error fetching events:', error)
+        console.error('Error fetching data:', error)
       } finally {
         setLoading(false)
       }
     }
-    fetchEvents()
-  }, [currentDate, dataSource])
+    fetchData()
+  }, [currentDate, dataSource, selectedLocation])
 
   const handleEventClick = (event: SaintEvent) => {
     setSelectedEvent(event)
@@ -85,13 +102,13 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
     const transformedEvents = transformEventsForMonthView(events)
     switch (viewMode) {
       case "month":
-        return <MonthView events={transformedEvents} currentDate={currentDate} onDateChange={setCurrentDate} />
+        return <MonthView events={transformedEvents} currentDate={currentDate} onDateChange={setCurrentDate} selectedLocation={selectedLocation} />
       case "week":
-        return <WeekView currentDate={currentDate} onEventClick={handleEventClick} events={events} />
+        return <WeekView currentDate={currentDate} onEventClick={handleEventClick} events={events} selectedLocation={selectedLocation} />
       case "table":
-        return <TableView currentDate={currentDate} onEventClick={handleEventClick} events={events} />
+        return <TableView currentDate={currentDate} onEventClick={handleEventClick} events={events} selectedLocation={selectedLocation} />
       default:
-        return <MonthView events={transformedEvents} currentDate={currentDate} onDateChange={setCurrentDate} />
+        return <MonthView events={transformedEvents} currentDate={currentDate} onDateChange={setCurrentDate} selectedLocation={selectedLocation} />
     }
   }
 
@@ -149,7 +166,7 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
   )
 }
 
-function WeekView({ currentDate, onEventClick, events }: { currentDate: Date; onEventClick: (event: SaintEvent) => void; events: Event[] }) {
+function WeekView({ currentDate, onEventClick, events, selectedLocation }: { currentDate: Date; onEventClick: (event: SaintEvent) => void; events: Event[]; selectedLocation: string }) {
   const startOfWeek = new Date(currentDate)
   startOfWeek.setDate(currentDate.getDate() - currentDate.getDay())
 
@@ -227,7 +244,7 @@ function WeekView({ currentDate, onEventClick, events }: { currentDate: Date; on
   )
 }
 
-function TableView({ currentDate, onEventClick, events }: { currentDate: Date; onEventClick: (event: any) => void; events: Event[] }) {
+function TableView({ currentDate, onEventClick, events, selectedLocation }: { currentDate: Date; onEventClick: (event: any) => void; events: Event[]; selectedLocation: string }) {
   const monthEvents = events
     .filter((event) => {
       if (event.eventType === "saint-day") {

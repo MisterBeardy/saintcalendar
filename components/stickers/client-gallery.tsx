@@ -6,11 +6,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, Grid3X3, LayoutGrid } from 'lucide-react'
 import type { Saint, Location, Sticker } from '@/app/stickers/gallery/page'
 import { generateUniqueKeyString } from '@/lib/key-validation'
+import StickerCard from './sticker-card'
+import StickerDetailModal from './sticker-detail-modal'
 
-export default function ClientGallery() {
+interface ClientGalleryProps {
+  selectedLocation: string
+}
+
+export default function ClientGallery({ selectedLocation }: ClientGalleryProps) {
   const [allStickers, setAllStickers] = useState<Sticker[]>([])
   const [filteredStickers, setFilteredStickers] = useState<Sticker[]>([])
   const [saints, setSaints] = useState<Saint[]>([])
@@ -18,8 +24,10 @@ export default function ClientGallery() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedSaint, setSelectedSaint] = useState('')
-  const [selectedLocation, setSelectedLocation] = useState('')
   const [yearFilter, setYearFilter] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'cards'>('grid')
+  const [selectedSticker, setSelectedSticker] = useState<Sticker | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,8 +68,11 @@ export default function ClientGallery() {
       filtered = filtered.filter(sticker => sticker?.saint?.id?.toString() === selectedSaint)
     }
 
-    if (selectedLocation) {
-      filtered = filtered.filter(sticker => sticker?.location?.id?.toString() === selectedLocation)
+    if (selectedLocation && selectedLocation !== "All Locations") {
+      const location = locations.find(loc => loc.displayName === selectedLocation)
+      if (location) {
+        filtered = filtered.filter(sticker => sticker?.location?.id?.toString() === location.id.toString())
+      }
     }
 
     if (yearFilter) {
@@ -73,7 +84,17 @@ export default function ClientGallery() {
     if (filtered.length > 0) {
       console.log('Sample filtered sticker structure:', filtered[0])
     }
-  }, [searchTerm, selectedSaint, selectedLocation, yearFilter, allStickers])
+  }, [searchTerm, selectedSaint, selectedLocation, yearFilter, allStickers, locations])
+
+  const handleStickerClick = (sticker: Sticker) => {
+    setSelectedSticker(sticker)
+    setIsModalOpen(true)
+  }
+
+  const handleModalClose = () => {
+    setIsModalOpen(false)
+    setSelectedSticker(null)
+  }
 
   if (loading) {
     return (
@@ -87,9 +108,32 @@ export default function ClientGallery() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Sticker Box Gallery</h1>
-        <p className="text-muted-foreground">Browse and search stickers by Saint Name, Year, and Location.</p>
+      
+
+      {/* View Toggle */}
+      <div className="mb-6 flex justify-center">
+        <div className="flex bg-muted rounded-lg p-1">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className="flex items-center gap-2"
+            aria-label="Switch to grid view"
+          >
+            <Grid3X3 className="h-4 w-4" />
+            Grid View
+          </Button>
+          <Button
+            variant={viewMode === 'cards' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('cards')}
+            className="flex items-center gap-2"
+            aria-label="Switch to card view"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Card View
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -111,7 +155,7 @@ export default function ClientGallery() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="saint-select" className="block text-sm font-medium mb-2">Saint Name</label>
             <Select value={selectedSaint} onValueChange={setSelectedSaint}>
@@ -122,22 +166,6 @@ export default function ClientGallery() {
                 {saints.map((saint) => (
                   <SelectItem key={saint.id} value={saint.id.toString()}>
                     {saint.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label htmlFor="location-select" className="block text-sm font-medium mb-2">Location</label>
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger id="location-select">
-                <SelectValue placeholder="All Locations" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((location) => (
-                  <SelectItem key={location.id} value={location.id.toString()}>
-                    {location.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -159,54 +187,75 @@ export default function ClientGallery() {
         </div>
       </div>
 
-      {/* Sticker Grid */}
+      {/* Sticker Display */}
       {Array.isArray(filteredStickers) && filteredStickers.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No stickers found matching your criteria.</p>
         </div>
       ) : Array.isArray(filteredStickers) ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStickers.map((sticker, index) => {
-            // Generate unique key using our utility function for stickers without IDs
-            const key = sticker?.id || `sticker-${index}-${generateUniqueKeyString()}`;
-            console.log(`Sticker key at index ${index}:`, key);
-            // Check for specific problematic keys
-            if (key.toString().includes('540-433-5225') || key.toString().includes('NA')) {
-              console.warn('Found potentially problematic key:', key);
-            }
-            console.log('About to render Card component for sticker:', sticker);
-            return (
-              <Card key={key} className="w-full">
-                <CardHeader>
-                  <img
-                    src={sticker?.imageUrl || '/placeholder.jpg'}
-                    alt={`${sticker?.saint?.name || 'Sticker'} sticker`}
-                    className="w-full h-48 object-cover rounded-md"
-                    loading="lazy"
-                  />
-                </CardHeader>
-                <CardContent className="p-4">
-                  <CardTitle className="text-lg font-semibold mb-1">{sticker?.saint?.name || 'Unknown Saint'}</CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground mb-2">
-                    {sticker?.year || 'Unknown Year'}
-                  </CardDescription>
-                  <Badge variant="secondary" className="mb-3">
-                    {sticker?.location?.name || 'Unknown Location'}
-                  </Badge>
-                  {sticker?.type && <Badge variant="outline" className="ml-2">{sticker.type}</Badge>}
-                  <div className="mt-4 flex justify-end">
-                    <Button variant="outline" size="sm">View Details</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredStickers.map((sticker, index) => {
+              // Generate unique key using our utility function for stickers without IDs
+              const key = sticker?.id || `sticker-${index}-${generateUniqueKeyString()}`;
+              console.log(`Sticker key at index ${index}:`, key);
+              // Check for specific problematic keys
+              if (key.toString().includes('540-433-5225') || key.toString().includes('NA')) {
+                console.warn('Found potentially problematic key:', key);
+              }
+              console.log('About to render Card component for sticker:', sticker);
+              return (
+                <Card key={key} className="w-full">
+                  <CardHeader>
+                    <img
+                      src={sticker?.imageUrl || '/placeholder.jpg'}
+                      alt={`${sticker?.saint?.name || 'Sticker'} sticker`}
+                      className="w-full h-48 object-cover rounded-md"
+                      loading="lazy"
+                    />
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <CardTitle className="text-lg font-semibold mb-1">{sticker?.saint?.name || 'Unknown Saint'}</CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground mb-2">
+                      {sticker?.year || 'Unknown Year'}
+                    </CardDescription>
+                    <Badge variant="secondary" className="mb-3">
+                      {sticker?.location?.name || 'Unknown Location'}
+                    </Badge>
+                    {sticker?.type && <Badge variant="outline" className="ml-2">{sticker.type}</Badge>}
+                    <div className="mt-4 flex justify-end">
+                      <Button variant="outline" size="sm" onClick={() => handleStickerClick(sticker)}>View Details</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
+            {filteredStickers.map((sticker, index) => {
+              const key = sticker?.id || `sticker-${index}-${generateUniqueKeyString()}`;
+              return (
+                <StickerCard
+                  key={key}
+                  sticker={sticker}
+                  onClick={() => handleStickerClick(sticker)}
+                />
+              );
+            })}
+          </div>
+        )
       ) : (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Error loading stickers. Please refresh the page.</p>
         </div>
       )}
+
+      <StickerDetailModal
+        isOpen={isModalOpen}
+        onOpenChange={handleModalClose}
+        sticker={selectedSticker}
+      />
     </div>
   )
 }

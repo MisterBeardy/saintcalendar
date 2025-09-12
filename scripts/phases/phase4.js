@@ -7,6 +7,7 @@
 
 import DatabaseService from '../services/DatabaseService.js';
 import { isValidDate } from '../utils/helpers.js';
+import { isValidStickerReference } from '../utils/validation.js';
 
 // Initialize service instance
 const dbService = new DatabaseService();
@@ -164,8 +165,10 @@ async function runDatabaseImport(processedData, validationResults, progressTrack
         createSaintYear: (data) => tx.saintYear.create({ data }),
         createMilestone: (data) => tx.milestone.create({ data }),
         createEvent: (data) => tx.event.create({ data }),
+        createSticker: (data) => tx.sticker.create({ data }),
         findLocationBySheetId: (sheetId) => tx.location.findUnique({ where: { sheetId } }),
-        findSaintByNumber: (saintNumber) => tx.saint.findUnique({ where: { saintNumber } })
+        findSaintByNumber: (saintNumber) => tx.saint.findUnique({ where: { saintNumber } }),
+        findStickerByImageUrl: (imageUrl) => tx.sticker.findFirst({ where: { imageUrl } })
       };
 
       // Import locations first
@@ -175,6 +178,10 @@ async function runDatabaseImport(processedData, validationResults, progressTrack
       // Import saints
       console.log('👤 Importing saints...');
       await importSaints(processedData, progressTracker, txDbService);
+
+      // Import stickers from historical and milestone data
+      console.log('🏷️  Importing stickers...');
+      await importStickers(processedData, progressTracker, txDbService);
 
       // Import historical data and create events
       console.log('📅 Importing historical data and events...');
@@ -350,6 +357,89 @@ async function importSaints(processedData, progressTracker, dbService = dbServic
       }
     }
   }
+}
+
+/**
+ * Import stickers from historical and milestone data
+ */
+async function importStickers(processedData, progressTracker, dbService = dbService) {
+  const stickerSet = new Set(); // Track unique stickers to avoid duplicates
+
+  for (const locationData of processedData) {
+    const location = locationData.location;
+    const historicalRecords = locationData.historical || [];
+    const milestones = locationData.milestones || [];
+
+    // Collect all unique stickers from historical and milestone data
+    const allStickerRecords = [
+      ...historicalRecords.map(record => ({
+        imageUrl: record.sticker,
+        year: parseInt(record.historicalYear),
+        saintNumber: record.saintNumber,
+        type: 'historical'
+      })),
+      ...milestones.map(milestone => ({
+        imageUrl: milestone.sticker,
+        year: new Date(milestone.milestoneDate).getFullYear(),
+        saintNumber: milestone.saintNumber,
+        type: 'milestone'
+      }))
+    ];
+
+    for (const stickerRecord of allStickerRecords) {
+      try {
+        // Skip if no sticker URL or already processed
+        if (!stickerRecord.imageUrl || stickerRecord.imageUrl.trim() === '' || stickerSet.has(stickerRecord.imageUrl)) {
+          continue;
+        }
+
+        // Validate sticker reference format
+        if (!isValidStickerReference(stickerRecord.imageUrl)) {
+          console.warn(`⚠️  Invalid sticker reference format: ${stickerRecord.imageUrl}, skipping`);
+          continue;
+        }
+
+        // Check if sticker already exists
+        const existingSticker = await dbService.findStickerByImageUrl(stickerRecord.imageUrl);
+        if (existingSticker) {
+          stickerSet.add(stickerRecord.imageUrl);
+          continue;
+        }
+
+        // Find the corresponding saint
+        const saint = await dbService.findSaintByNumber(stickerRecord.saintNumber);
+        if (!saint) {
+          console.warn(`⚠️  Saint ${stickerRecord.saintNumber} not found for sticker ${stickerRecord.imageUrl}, skipping`);
+          continue;
+        }
+
+        // Prepare sticker data for import
+        const stickerDataToImport = {
+          imageUrl: stickerRecord.imageUrl,
+          year: stickerRecord.year,
+          type: stickerRecord.type,
+          status: 'active', // Set to active since it's being imported
+          locationId: location.id,
+          saintId: saint.id
+        };
+
+        // Import sticker
+        const importedSticker = await dbService.createSticker(stickerDataToImport);
+
+        stickerSet.add(stickerRecord.imageUrl);
+
+        if (progressTracker) {
+          progressTracker.increment(`Imported sticker: ${stickerRecord.imageUrl}`);
+        }
+
+      } catch (error) {
+        console.error(`❌ Failed to import sticker ${stickerRecord.imageUrl}: ${error.message}`);
+        // Don't throw error for stickers - they're not critical to the main import
+      }
+    }
+  }
+
+  console.log(`✅ Processed ${stickerSet.size} unique stickers`);
 }
 
 /**
@@ -594,6 +684,7 @@ export {
   runDatabaseImport,
   importLocations,
   importSaints,
+  importStickers,
   importHistoricalData,
   importMilestones,
   calculateSaintTotalBeers,

@@ -23,7 +23,7 @@ async function main() {
         sheetId: location.sheetId,
         isActive: location.isActive,
         managerEmail: location.managerEmail,
-        opened: location.opened,
+        openedDate: location.opened ? new Date(location.opened) : null,
       },
     })
   }

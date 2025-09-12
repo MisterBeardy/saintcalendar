@@ -7,6 +7,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [2.1.0] - 2025-09-12
+
+### Added
+- Renamed "stickers" to "sticker box" for improved clarity
+- Added accessibility improvements to event details
+- Implemented card layout for event details modal
+- Added error handling to event details modal
+
+### Changed
+- Updated database cleanup processes via web interface
+- Recreated verification and import scripts (work in progress)
+
+### Fixed
+- Resolved database functionality issues, confirming DB is now working
+
 ## [2.0.0] - 2025-09-08
 
 ### Added
@@ -77,7 +92,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 - N/A
 
-[Unreleased]: https://github.com/compare/2.0.0...HEAD
+[Unreleased]: https://github.com/compare/2.1.0...HEAD
+[2.1.0]: https://github.com/compare/2.0.0...2.1.0
 [2.0.0]: https://github.com/compare/1.2.0...2.0.0
 [1.2.0]: https://github.com/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/compare/1.0.0...1.1.0

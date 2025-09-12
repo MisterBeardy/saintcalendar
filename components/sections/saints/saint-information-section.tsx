@@ -23,11 +23,35 @@ export function SaintInformationSection({
   const [isSaintModalOpen, setIsSaintModalOpen] = useState(false)
   const [saints, setSaints] = useState<Saint[]>([])
   const [loading, setLoading] = useState(true)
+  const [locations, setLocations] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch('/api/locations')
+        if (response.ok) {
+          const data = await response.json()
+          setLocations(data)
+        }
+      } catch (error) {
+        console.error('Error fetching locations:', error)
+      }
+    }
+    fetchLocations()
+  }, [])
 
   useEffect(() => {
     const fetchSaints = async () => {
       try {
-        const response = await fetch('/api/saints')
+        let url = '/api/saints'
+        if (selectedLocation && selectedLocation !== 'All Locations') {
+          const location = locations.find(loc => loc.displayName === selectedLocation)
+          if (location) {
+            url += `?location_id=${location.id}`
+          }
+        }
+
+        const response = await fetch(url)
         console.log(`[SaintInformationSection] API response status: ${response.status}`)
 
         if (!response.ok) {
@@ -60,7 +84,7 @@ export function SaintInformationSection({
           milestones: saint.milestones || []
         }))
         setSaints(transformedSaints)
-        
+
         // Validate saint numbers for duplicates
         validateUniqueKeysByProperty(transformedSaints, 'saintNumber', 'saint-information-section');
       } catch (error) {
@@ -70,7 +94,7 @@ export function SaintInformationSection({
       }
     }
     fetchSaints()
-  }, [])
+  }, [selectedLocation, locations])
 
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSession, signIn } from "next-auth/react"
 import { Calendar, Users, ImageIcon, BarChart3, Settings, ChevronDown, ChevronRight } from "lucide-react"
+import { Badge } from '@/components/ui/badge'
+import { usePendingChangesCount } from '@/hooks/use-pending-changes-count'
 
 interface SubMenuItem {
   id: string
@@ -102,6 +104,7 @@ interface SidebarNavigationProps {
 
 export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNavigationProps) {
   const { data: session, status } = useSession()
+  const { count, refetch } = usePendingChangesCount()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
   const [filteredNavigationItems, setFilteredNavigationItems] = useState<NavigationItem[]>(
     navigationItems.filter(item => item.id !== "admin")
@@ -165,6 +168,19 @@ export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNa
     }
   }, [session, status])
 
+  // Listen for pending-changes-updated event to refresh badge count
+  useEffect(() => {
+    const handlePendingChangesUpdate = () => {
+      refetch()
+    }
+
+    window.addEventListener('pending-changes-updated', handlePendingChangesUpdate)
+
+    return () => {
+      window.removeEventListener('pending-changes-updated', handlePendingChangesUpdate)
+    }
+  }, [refetch])
+
   return (
     <nav className="flex-1 p-3">
       <div className="space-y-1">
@@ -217,7 +233,12 @@ export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNa
                         }`}
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium">{subItem.label}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium">{subItem.label}</div>
+                            {subItem.id === "admin-pending" && count > 0 && (
+                              <Badge variant="destructive">{count}</Badge>
+                            )}
+                          </div>
                           <div className="text-xs text-sidebar-foreground/50">{subItem.description}</div>
                         </div>
                       </button>

@@ -113,20 +113,15 @@ export default function SaintsCalendarApp() {
         }
         break
       case "stickers":
-        baseInfo.activeItemLabel = "Sticker Box"
-        baseInfo.activeItemDescription = "Sticker gallery and search"
         if (activeSection === "stickers-gallery") {
-          baseInfo.submenuLabel = "Sticker Gallery"
-          baseInfo.submenuDescription = "Browse all available stickers"
-        } else if (activeSection === "stickers-search") {
-          baseInfo.submenuLabel = "Search Sticker Box"
-          baseInfo.submenuDescription = "Find specific stickers"
-        } else if (activeSection === "stickers-favorites") {
-          baseInfo.submenuLabel = "Favorite Sticker Box"
-          baseInfo.submenuDescription = "Your saved sticker collection"
+          baseInfo.activeItemLabel = "Gallery"
+          baseInfo.activeItemDescription = "Browse and search stickers by Saint Name, Year, and Location."
+        } else if (activeSection === "stickers-templates") {
+          baseInfo.activeItemLabel = "Templates"
+          baseInfo.activeItemDescription = "Create and manage sticker templates"
         } else {
-          baseInfo.submenuLabel = "Sticker Collection"
-          baseInfo.submenuDescription = "Manage and organize your sticker gallery"
+          baseInfo.activeItemLabel = "Sticker Box"
+          baseInfo.activeItemDescription = "Sticker gallery and search"
         }
         break
       case "stats":
