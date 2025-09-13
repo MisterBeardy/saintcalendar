@@ -60,6 +60,7 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
 
         console.log(`[HomeSection] Received ${eventsRes.length} events from API for current month`)
         console.log(`[HomeSection] First 3 events:`, eventsRes.slice(0, 3))
+        console.log(`[HomeSection] Sample event dates from API:`, eventsRes.slice(0, 3).map(e => ({ id: e.id, date: e.date, dateType: typeof e.date })))
 
         setEvents(eventsRes)
       } catch (error) {
@@ -86,14 +87,18 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
 
   // Transform Event[] to SaintEvent[] for MonthView
   const transformEventsForMonthView = (events: Event[]): any[] => {
-    return events.map((event: any) => ({
-      id: event.id,
-      name: event.saintName || event.saint?.name || 'Unknown',
-      date: new Date(Math.floor(event.date / 10000), Math.floor((event.date % 10000) / 100) - 1, event.date % 100),
-      location: event.location?.displayName || 'Unknown',
-      state: event.location?.state || 'Unknown',
-      beerCount: event.beers || 0
-    }))
+    return events.map((event: any) => {
+      const transformedDate = new Date(Math.floor(event.date / 10000), Math.floor((event.date % 10000) / 100) - 1, event.date % 100)
+      console.log(`[HomeSection] Transforming event ${event.id}: date ${event.date} -> ${transformedDate.toISOString()}`)
+      return {
+        id: event.id,
+        name: event.saintName || event.saint?.name || 'Unknown',
+        date: transformedDate,
+        location: event.location?.displayName || 'Unknown',
+        state: event.location?.state || 'Unknown',
+        beerCount: event.beers || 0
+      }
+    })
   }
 
   const viewMode = activeSubSection?.split("-")[1] || "month"
@@ -145,6 +150,8 @@ export function HomeSection({ selectedLocation, dataSource, activeSubSection = "
         viewMode={viewMode as "month" | "week"}
         events={events}
         loading={loading}
+        locations={locations}
+        selectedLocation={selectedLocation}
       />
 
       {renderCalendarView()}

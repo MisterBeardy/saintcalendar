@@ -136,7 +136,7 @@ Contains core saint information and canonical dates.
 Contains annual historical event data with beer selections and social media links.
 
 #### Milestone Data Tab
-**Headers:** Saint Number, Real Name, Saint Name, Saint Date, Historical Milestone, Milestone Date, Milestone Sticker
+**Headers:** Saint Number,	Real Name,	Saint Name,	Saint Date,	Milestone Date,	Historical Milestone,	Milestone Sticker
 Contains achievement milestones and special event tracking.
 
 ## Technical Considerations

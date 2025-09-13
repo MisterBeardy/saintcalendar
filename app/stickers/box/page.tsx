@@ -26,7 +26,7 @@ export default function StickerBoxPage() {
         throw new Error('Failed to fetch stickers')
       }
       const data = await response.json()
-      const stickersData = Array.isArray(data) ? data : data.data || []
+      const stickersData = Array.isArray(data) ? data : data.stickers || data.data || []
       setStickers(stickersData)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load stickers')

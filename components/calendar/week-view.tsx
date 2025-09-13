@@ -66,11 +66,8 @@ export function WeekView() {
     const [detailedEvent, setDetailedEvent] = useState<EventDetails | null>(null)
     const [detailedEventLoading, setDetailedEventLoading] = useState(false)
 
-  const parseYYYYMMDD = (dateInt: number): Date => {
-    const year = Math.floor(dateInt / 10000)
-    const month = Math.floor((dateInt % 10000) / 100) - 1
-    const day = dateInt % 100
-    return new Date(year, month, day)
+  const parseUnixTimestamp = (timestamp: number): Date => {
+    return new Date(timestamp * 1000)
   }
 
   useEffect(() => {
@@ -113,7 +110,7 @@ export function WeekView() {
         const transformedEvents = data.map((event: any) => ({
           id: String(event.id),
           name: event.saint?.name || 'Unknown',
-          date: parseYYYYMMDD(event.date),
+          date: parseUnixTimestamp(event.date),
           location: event.location?.displayName || 'Unknown',
           state: event.location?.state || 'Unknown',
           beerCount: event.beers || 0,
@@ -200,11 +197,8 @@ export function WeekView() {
     return `${weekStart.toLocaleDateString("en-US", options)} - ${weekEnd.toLocaleDateString("en-US", options)}`
   }
 
-  const formatDetailedDate = (dateInt: number) => {
-    const year = Math.floor(dateInt / 10000)
-    const month = Math.floor((dateInt % 10000) / 100)
-    const day = dateInt % 100
-    const date = new Date(year, month - 1, day)
+  const formatDetailedDate = (timestamp: number) => {
+    const date = new Date(timestamp * 1000)
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -213,12 +207,9 @@ export function WeekView() {
     })
   }
 
-  const isHistoricalEvent = (dateInt: number) => {
+  const isHistoricalEvent = (timestamp: number) => {
     const today = new Date()
-    const eventYear = Math.floor(dateInt / 10000)
-    const eventMonth = Math.floor((dateInt % 10000) / 100)
-    const eventDay = dateInt % 100
-    const eventDate = new Date(eventYear, eventMonth - 1, eventDay)
+    const eventDate = new Date(timestamp * 1000)
     return eventDate < today
   }
 

@@ -8,11 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight, Calendar, Beer } from "lucide-react"
 import { EventDetailsModal } from "@/components/modals/event-details-modal"
 
-function parseYYYYMMDD(dateInt: number): Date {
-  const year = Math.floor(dateInt / 10000)
-  const month = Math.floor((dateInt % 10000) / 100) - 1
-  const day = dateInt % 100
-  return new Date(year, month, day)
+function parseUnixTimestamp(timestamp: number): Date {
+  return new Date(timestamp * 1000)
 }
 
 interface SaintEvent {
@@ -104,7 +101,7 @@ export function MonthView({ events: propEvents, currentDate: propCurrentDate, on
         const transformedEvents = Array.isArray(data) ? data.map((event: any) => ({
           id: event.id,
           name: event.saint?.name || 'Unknown',
-          date: parseYYYYMMDD(event.date),
+          date: parseUnixTimestamp(event.date),
           location: event.location?.displayName || 'Unknown',
           state: event.location?.state || 'Unknown',
           beerCount: event.beers || 0,

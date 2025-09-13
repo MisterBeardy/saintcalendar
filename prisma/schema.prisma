@@ -78,15 +78,18 @@ model SaintYear {
   sticker             String?
   saintId             String
   saint               Saint      @relation(fields: [saintId], references: [id])
+
+  @@unique([saintId, year])
 }
 
 model Milestone {
-  id          String   @id @default(cuid())
-  count       Int
-  date        String
-  sticker     String?
-  saintId     String
-  saint       Saint    @relation(fields: [saintId], references: [id])
+  id                  String   @id @default(cuid())
+  count               Int
+  date                String
+  historicalMilestone String?  // Stores the historical milestone value (string or numeric)
+  sticker             String?
+  saintId             String
+  saint               Saint    @relation(fields: [saintId], references: [id])
 }
 
 model Event {
@@ -128,6 +131,7 @@ model Sticker {
   year        Int?
   imageUrl    String?
   type        String?
+  milestone   String?
 }
 
 model PendingChange {

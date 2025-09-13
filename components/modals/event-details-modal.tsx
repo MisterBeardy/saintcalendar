@@ -76,11 +76,8 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
     }
   }
 
-  const formatDate = (dateInt: number) => {
-    const year = Math.floor(dateInt / 10000)
-    const month = Math.floor((dateInt % 10000) / 100)
-    const day = dateInt % 100
-    const date = new Date(year, month - 1, day)
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp * 1000)
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -89,12 +86,9 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
     })
   }
 
-  const isHistoricalEvent = (dateInt: number) => {
+  const isHistoricalEvent = (timestamp: number) => {
     const today = new Date()
-    const eventYear = Math.floor(dateInt / 10000)
-    const eventMonth = Math.floor((dateInt % 10000) / 100)
-    const eventDay = dateInt % 100
-    const eventDate = new Date(eventYear, eventMonth - 1, eventDay)
+    const eventDate = new Date(timestamp * 1000)
     return eventDate < today
   }
 

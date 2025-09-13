@@ -5,6 +5,7 @@
  * including locations, saints, historical records, and milestones.
  */
 
+import logger from '../../lib/logger.js';
 import DatabaseService from '../services/DatabaseService.js';
 import { isValidDate } from '../utils/helpers.js';
 import { isValidStickerReference } from '../utils/validation.js';
@@ -168,7 +169,15 @@ async function runDatabaseImport(processedData, validationResults, progressTrack
         createSticker: (data) => tx.sticker.create({ data }),
         findLocationBySheetId: (sheetId) => tx.location.findUnique({ where: { sheetId } }),
         findSaintByNumber: (saintNumber) => tx.saint.findUnique({ where: { saintNumber } }),
-        findStickerByImageUrl: (imageUrl) => tx.sticker.findFirst({ where: { imageUrl } })
+        findStickerByImageUrl: (imageUrl) => tx.sticker.findFirst({ where: { imageUrl } }),
+        findSaintYearBySaintAndYear: (saintId, year) => tx.saintYear.findUnique({
+          where: {
+            saintId_year: {
+              saintId: saintId,
+              year: year
+            }
+          }
+        })
       };
 
       // Import locations first
@@ -245,11 +254,11 @@ async function importLocations(processedData, progressTracker, dbService = dbSer
         state: location.state,
         city: location.city,
         displayName: `${location.city}, ${location.state}`,
-        address: location.address,
-        phoneNumber: location.phoneNumber,
+        address: location.address || 'Address not provided',
+        phoneNumber: location.phoneNumber || 'Phone not provided',
         sheetId: location.sheetId,
         isActive: location.status === 'OPEN',
-        managerEmail: location.managerEmail,
+        managerEmail: location.managerEmail || 'manager@example.com',
         status: location.status,
         openedDate: location.opened ? new Date(location.opened) : null,
         openingDate: location.status === 'PENDING' && location.opened ? new Date(location.opened) : null,
@@ -291,6 +300,12 @@ async function importLocations(processedData, progressTracker, dbService = dbSer
  * Import saints into database
  */
 async function importSaints(processedData, progressTracker, dbService = dbService) {
+  logger.info('PHASE4 IMPORT: Starting saint import process', {
+    timestamp: new Date().toISOString(),
+    totalLocations: processedData.length,
+    totalSaints: processedData.reduce((sum, data) => sum + (data.saints?.length || 0), 0)
+  });
+
   for (const locationData of processedData) {
     const location = locationData.location;
     const saints = locationData.saints;
@@ -302,6 +317,11 @@ async function importSaints(processedData, progressTracker, dbService = dbServic
 
         if (existingSaint) {
           console.log(`⏭️  Skipping existing saint: ${saint.saintName} (${saint.saintNumber})`);
+          logger.info('PHASE4 IMPORT: Skipping existing saint', {
+            saintNumber: saint.saintNumber,
+            saintName: saint.saintName,
+            location: location.city
+          });
           importResults.summary.skippedRecords++;
           importResults.details.skippedItems.push({
             type: 'saint',
@@ -330,6 +350,12 @@ async function importSaints(processedData, progressTracker, dbService = dbServic
 
         // Import saint
         const importedSaint = await dbService.createSaint(saintDataToImport);
+        logger.info('PHASE4 IMPORT: New saint created', {
+          saintNumber: saint.saintNumber,
+          saintName: saint.saintName,
+          location: `${location.city}, ${location.state}`,
+          saintId: importedSaint.id
+        });
 
         importResults.summary.saintsImported++;
         importResults.details.importedSaints.push({
@@ -460,6 +486,20 @@ async function importHistoricalData(processedData, progressTracker, dbService = 
           continue;
         }
 
+        // Check if SaintYear record already exists
+        const existingSaintYear = await dbService.findSaintYearBySaintAndYear(saint.id, parseInt(record.historicalYear));
+
+        if (existingSaintYear) {
+          console.log(`⏭️  Skipping existing SaintYear record: ${record.saintName} (${record.saintNumber}) - Year ${record.historicalYear}`);
+          importResults.summary.skippedRecords++;
+          importResults.details.skippedItems.push({
+            type: 'saintYear',
+            name: `${record.saintName} (${record.saintNumber}) - Year ${record.historicalYear}`,
+            reason: 'SaintYear record already exists'
+          });
+          continue;
+        }
+
         // Prepare historical data for import
         const historicalDataToImport = {
           year: parseInt(record.historicalYear),
@@ -563,6 +603,7 @@ async function importMilestones(processedData, progressTracker, dbService = dbSe
         const milestoneDataToImport = {
           count: count,
           date: milestone.milestoneDate,
+          historicalMilestone: milestone.historicalMilestone,
           sticker: milestone.sticker,
           saintId: saint.id
         };
@@ -574,12 +615,12 @@ async function importMilestones(processedData, progressTracker, dbService = dbSe
         importResults.details.importedMilestones.push({
           id: importedMilestone.id,
           saint: `${milestone.saintName} (${milestone.saintNumber})`,
-          milestone: milestone.milestone,
+          historicalMilestone: milestone.historicalMilestone,
           location: `${location.city}, ${location.state}`
         });
 
         if (progressTracker) {
-          progressTracker.increment(`Imported milestone: ${milestone.saintName} - ${milestone.milestone}`);
+          progressTracker.increment(`Imported milestone: ${milestone.saintName} - ${milestone.historicalMilestone}`);
         }
 
       } catch (error) {
@@ -587,7 +628,7 @@ async function importMilestones(processedData, progressTracker, dbService = dbSe
         importResults.summary.failedRecords++;
         importResults.details.failedItems.push({
           type: 'milestone',
-          name: `${milestone.saintName} - ${milestone.milestone}`,
+          name: `${milestone.saintName} - ${milestone.historicalMilestone}`,
           error: error.message
         });
         throw error; // Re-throw to trigger transaction rollback

@@ -5,10 +5,18 @@ import { sampleEvents } from '../data/sample-events'
 
 const prisma = new PrismaClient()
 
+import { logger } from '../lib/logger'
 async function main() {
   console.log('Seeding database...')
+  logger.info('PRISMA SEED: Starting database seeding process', {
+    timestamp: new Date().toISOString(),
+    sampleLocationsCount: sampleLocations.length,
+    sampleSaintsCount: sampleSaints.length,
+    sampleEventsCount: sampleEvents.length
+  })
 
   // Insert locations
+  console.log(`Seeding ${sampleLocations.length} locations...`)
   for (const location of sampleLocations) {
     await prisma.location.upsert({
       where: { id: location.id },
@@ -28,8 +36,10 @@ async function main() {
     })
   }
   console.log('Locations seeded')
+  logger.info('PRISMA SEED: Locations seeded successfully', { count: sampleLocations.length })
 
   // Insert saints
+  console.log(`Seeding ${sampleSaints.length} saints...`)
   for (const saint of sampleSaints) {
     const location = await prisma.location.findFirst({
       where: { displayName: saint.location },
@@ -49,6 +59,7 @@ async function main() {
     })
   }
   console.log('Saints seeded')
+  logger.info('PRISMA SEED: Saints seeded successfully', { count: sampleSaints.length })
 
   // Insert saint years and milestones
   for (const saint of sampleSaints) {
@@ -123,8 +134,15 @@ async function main() {
     })
   }
   console.log('Events seeded')
+  logger.info('PRISMA SEED: Events seeded successfully', { count: sampleEvents.length })
 
   console.log('Seeding completed')
+  logger.info('PRISMA SEED: Database seeding completed successfully', {
+    timestamp: new Date().toISOString(),
+    totalLocations: sampleLocations.length,
+    totalSaints: sampleSaints.length,
+    totalEvents: sampleEvents.length
+  })
 }
 
 main()

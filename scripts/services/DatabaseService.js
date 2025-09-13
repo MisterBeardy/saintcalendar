@@ -52,6 +52,17 @@ class DatabaseService {
     });
   }
 
+  async findSaintYearBySaintAndYear(saintId, year) {
+    return await this.prisma.saintYear.findUnique({
+      where: {
+        saintId_year: {
+          saintId: saintId,
+          year: year
+        }
+      }
+    });
+  }
+
   async transaction(callback) {
     return await this.prisma.$transaction(callback);
   }

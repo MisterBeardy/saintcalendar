@@ -40,7 +40,7 @@ export default function ClientGallery({ selectedLocation }: ClientGalleryProps) 
         ])
         setSaints(Array.isArray(saintsRes) ? saintsRes : saintsRes.data || [])
         setLocations(Array.isArray(locationsRes) ? locationsRes : locationsRes.data || [])
-        const stickersData = Array.isArray(stickersRes) ? stickersRes : stickersRes.data || []
+        const stickersData = Array.isArray(stickersRes) ? stickersRes : stickersRes.stickers || []
         setAllStickers(stickersData)
         setFilteredStickers(stickersData)
         console.log('Fetched stickers data structure:', stickersData);

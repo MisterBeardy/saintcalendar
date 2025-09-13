@@ -2,6 +2,8 @@
 
 import type { Saint } from "@/types/saint-events"
 import { validateUniqueKeysByProperty } from "@/lib/key-validation"
+import { useState, useMemo } from "react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 
 interface SaintsListProps {
   saints: Saint[]
@@ -19,11 +21,29 @@ export function SaintsList({ saints, searchTerm, onSaintClick, debouncedSearchTe
   // Run validation on component mount and when saints change
   validateSaintNumbers();
 
+  const [isAscending, setIsAscending] = useState(true);
+
+  const sortedSaints = useMemo(() => {
+    if (searchTerm) return saints;
+    return [...saints].sort((a, b) => isAscending ? a.saintNumber - b.saintNumber : b.saintNumber - a.saintNumber);
+  }, [saints, isAscending, searchTerm]);
+
   return (
     <div className="space-y-4">
-      <h4 className="font-heading font-semibold">{searchTerm ? `Search Results (${saints.length})` : "Recent Saints"}</h4>
+      <h4 className="font-heading font-semibold flex items-center gap-2">
+        {searchTerm ? `Search Results (${saints.length})` : "Recent Saints"}
+        {!searchTerm && (
+          <button
+            onClick={() => setIsAscending(!isAscending)}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1"
+            aria-label={isAscending ? "Sort descending" : "Sort ascending"}
+          >
+            {isAscending ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          </button>
+        )}
+      </h4>
       <div className="grid gap-4">
-        {saints.map((saint) => (
+        {sortedSaints.map((saint) => (
           <button
             key={`${saint.saintNumber}-${saint.id}`}
             onClick={() => onSaintClick(saint)}

@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 export async function GET(request: NextRequest) {
   try {
     const count = await prisma.location.count({
-      where: { isActive: true }
+      where: { status: 'OPEN' }
     });
     return NextResponse.json({ count });
   } catch (error) {

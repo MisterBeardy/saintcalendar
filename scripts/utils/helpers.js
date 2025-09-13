@@ -3,26 +3,38 @@
  */
 
 /**
- * Validate date format (MM/DD/YYYY, MM/DD, or MM-DD-YYYY, MM-DD)
+ * Validate date format (MM/DD/YYYY, MM/DD, YYYY-MM-DD, or dash variants)
  */
 export function isValidDate(dateString) {
   if (!dateString) return false;
 
-  // Support both MM/DD/YYYY and MM/DD formats (and dash variants)
-  const dateRegex = /^(0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])(?:[-/](?:\d{4}))?$/;
-  if (!dateRegex.test(dateString)) {
+  // Support MM/DD/YYYY, MM/DD, YYYY-MM-DD formats (and dash/slash variants)
+  const mmddRegex = /^(0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])(?:[-/](?:\d{4}))?$/;
+  const yyyymmddRegex = /^\d{4}[-/](0[1-9]|1[0-2])[-/](0[1-9]|[12]\d|3[01])$/;
+
+  if (!mmddRegex.test(dateString) && !yyyymmddRegex.test(dateString)) {
     return false;
   }
 
   // Additional validation for actual date validity
   const parts = dateString.split(/[-/]/);
-  const month = parseInt(parts[0]) - 1; // JS months are 0-based
-  const day = parseInt(parts[1]);
-  const year = parts.length === 3 ? parseInt(parts[2]) : 2000; // Use 2000 as reference year for MM/DD validation
+
+  let month, day, year;
+  if (parts.length === 3 && parts[0].length === 4) {
+    // YYYY-MM-DD format
+    year = parseInt(parts[0]);
+    month = parseInt(parts[1]) - 1; // JS months are 0-based
+    day = parseInt(parts[2]);
+  } else {
+    // MM/DD/YYYY or MM/DD format
+    month = parseInt(parts[0]) - 1; // JS months are 0-based
+    day = parseInt(parts[1]);
+    year = parts.length === 3 ? parseInt(parts[2]) : 2000; // Use 2000 as reference year for MM/DD validation
+  }
 
   // Check if it's a valid date
   const testDate = new Date(year, month, day);
-  return testDate.getMonth() === month && testDate.getDate() === day;
+  return testDate.getMonth() === month && testDate.getDate() === day && testDate.getFullYear() === year;
 }
 
 /**
@@ -252,4 +264,31 @@ export function parseBurgerField(burgerString) {
 
   // If no valid burgers found, return invalid result
   return { burgers: [], isValid: false, original: burgerString };
+}
+
+/**
+ * Parse Historical Milestone field that can contain strings or numbers
+ * Handles: "Notcher", "Knight", "2000", "3000", etc.
+ */
+export function parseHistoricalMilestone(value) {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  // Handle empty values
+  if (!trimmed) {
+    return null;
+  }
+
+  // Check if it's a number (like "2000", "3000")
+  const numericValue = parseInt(trimmed);
+  if (!isNaN(numericValue) && numericValue > 0) {
+    return numericValue.toString(); // Store as string to maintain consistency
+  }
+
+  // Handle string values (like "Notcher", "Knight")
+  // Convert to lowercase for consistency and remove extra spaces
+  return trimmed.toLowerCase().replace(/\s+/g, ' ');
 }

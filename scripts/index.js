@@ -863,7 +863,7 @@ async function runFullImportProcess(autoConfirm = false) {
               importResults.details.importedMilestones.push({
                 id: importedMilestone.id,
                 saint: `${milestone.saintName} (${milestone.saintNumber})`,
-                milestone: milestone.milestone,
+                milestone: milestone.historicalMilestone,
                 location: `${location.city}, ${location.state}`
               });
 
@@ -872,7 +872,7 @@ async function runFullImportProcess(autoConfirm = false) {
               importResults.summary.failedRecords++;
               importResults.details.failedItems.push({
                 type: 'milestone',
-                name: `${milestone.saintName} - ${milestone.milestone}`,
+                name: `${milestone.saintName} - ${milestone.historicalMilestone}`,
                 error: error.message
               });
             }
@@ -1334,7 +1334,7 @@ async function handlePhase2Operations() {
           console.log(`\n🏆 Milestones: ${locationSheetData.milestones.length}`);
           if (locationSheetData.milestones.length > 0) {
             locationSheetData.milestones.slice(0, 5).forEach((milestone, index) => {
-              console.log(`   ${index + 1}. ${milestone.saintName} - ${milestone.milestone} - ${milestone.isValid ? '✅' : '❌'}`);
+              console.log(`   ${index + 1}. ${milestone.saintName} - ${milestone.historicalMilestone} - ${milestone.isValid ? '✅' : '❌'}`);
             });
             if (locationSheetData.milestones.length > 5) {
               console.log(`   ... and ${locationSheetData.milestones.length - 5} more`);

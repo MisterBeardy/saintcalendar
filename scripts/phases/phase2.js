@@ -7,7 +7,7 @@
 
 import GoogleSheetsService from '../services/GoogleSheetsService.js';
 import RetryHandler from '../services/RetryHandler.js';
-import { isValidDate, arraysEqual, isValidYear, constructEventDate } from '../utils/helpers.js';
+import { isValidDate, arraysEqual, isValidYear, constructEventDate, parseHistoricalMilestone } from '../utils/helpers.js';
 
 // Initialize service instances
 const sheetsService = new GoogleSheetsService();
@@ -228,7 +228,7 @@ function processMilestoneData(valueRange, location) {
   const headers = rows[0];
 
   // Validate headers
-  const expectedHeaders = ['Saint Number', 'Real Name', 'Saint Name', 'Saint Date', 'Historical Milestone', 'Milestone Date', 'Milestone Sticker'];
+  const expectedHeaders = ['Saint Number', 'Real Name', 'Saint Name', 'Saint Date', 'Milestone Date', 'Historical Milestone', 'Milestone Sticker'];
   if (!arraysEqual(headers.slice(0, 7), expectedHeaders)) {
     console.warn(`⚠️  Unexpected headers in Milestone Data tab for ${location.city}: ${headers.join(', ')}`);
   }
@@ -245,9 +245,10 @@ function processMilestoneData(valueRange, location) {
     const milestone = {
       saintNumber: row[0] || '',
       realName: row[1] || '',
+      saintName: row[2] || '',
       saintDate: row[3] || '',
-      milestone: row[4] || '',
-      milestoneDate: row[5] || '',
+      milestoneDate: row[4] || '',
+      historicalMilestone: parseHistoricalMilestone(row[5] || ''),
       sticker: row[6] || '',
       locationId: location.sheetId || null,
       location: location
@@ -256,7 +257,7 @@ function processMilestoneData(valueRange, location) {
     // Basic validation
     const validationErrors = [];
     if (!milestone.saintNumber.trim()) validationErrors.push('Missing saint number');
-    if (!milestone.milestone.trim()) validationErrors.push('Missing milestone description');
+    if (!milestone.historicalMilestone) validationErrors.push('Missing historical milestone');
     if (!isValidDate(milestone.milestoneDate)) validationErrors.push('Invalid milestone date');
 
     milestone.validationErrors = validationErrors;

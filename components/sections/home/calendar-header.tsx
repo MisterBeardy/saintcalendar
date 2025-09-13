@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Event } from "@/lib/generated/prisma"
+import type { Location } from "@/types/location-data"
 
 interface CalendarHeaderProps {
   currentDate: Date
@@ -12,17 +13,55 @@ interface CalendarHeaderProps {
   viewMode?: "month" | "week"
   events?: Event[]
   loading?: boolean
+  locations?: Location[]
+  selectedLocation?: string
 }
 
-export function CalendarHeader({ currentDate, setCurrentDate, viewMode = "month", events = [], loading = false }: CalendarHeaderProps) {
+export function CalendarHeader({ currentDate, setCurrentDate, viewMode = "month", events = [], loading = false, locations = [], selectedLocation = "All Locations" }: CalendarHeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth())
+  const [yearOptions, setYearOptions] = useState<number[]>([])
 
   useEffect(() => {
     setSelectedYear(currentDate.getFullYear())
     setSelectedMonth(currentDate.getMonth())
   }, [currentDate])
+
+  const computeStartYear = () => {
+    if (!locations.length) return 2020
+
+    if (selectedLocation === "All Locations") {
+      const rawDates = locations.map(loc => loc.openedDate || loc.openingDate)
+      const dates = rawDates
+        .filter(date => date !== null)
+        .map(date => typeof date === 'string' ? new Date(date) : date) as Date[]
+      if (dates.length === 0) return 2020
+      const minDate = new Date(Math.min(...dates.map(d => d.getTime())))
+      return minDate.getFullYear()
+    } else {
+      const location = locations.find(loc => loc.displayName === selectedLocation)
+      if (!location) return 2020
+      const date = location.openedDate || location.openingDate
+      if (!date) return 2020
+      const parsedDate = typeof date === 'string' ? new Date(date) : date
+      return parsedDate.getFullYear()
+    }
+  }
+
+  useEffect(() => {
+    const startYear = computeStartYear()
+    const currentYear = new Date().getFullYear()
+    const endYear = currentYear + 10
+    const options = Array.from({ length: endYear - startYear + 1 }, (_, i) => startYear + i)
+    setYearOptions(options)
+  }, [locations, selectedLocation])
+
+  useEffect(() => {
+    if (yearOptions.length > 0 && !yearOptions.includes(selectedYear)) {
+      setSelectedYear(yearOptions[0])
+    }
+  }, [yearOptions])
 
   const monthNames = [
     "January",
@@ -132,7 +171,7 @@ export function CalendarHeader({ currentDate, setCurrentDate, viewMode = "month"
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Array.from({ length: 11 }, (_, i) => 2020 + i).map((year) => (
+                        {yearOptions.map((year) => (
                           <SelectItem key={year} value={year.toString()}>
                             {year}
                           </SelectItem>

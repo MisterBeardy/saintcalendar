@@ -203,6 +203,7 @@ export default function SaintsCalendarApp() {
             selectedLocation={selectedLocation}
             dataSource={dataSource}
             setDataSource={setDataSource}
+            setActiveSection={setActiveSection}
           />
         </main>
       </div>

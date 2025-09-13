@@ -478,8 +478,8 @@ async function verifyMilestoneData(processedData) {
         isValid = false;
       }
 
-      if (!milestone.milestone?.trim()) {
-        errors.push('Missing milestone description');
+      if (!milestone.historicalMilestone?.trim()) {
+        errors.push('Missing historical milestone');
         isValid = false;
       }
 
@@ -489,7 +489,7 @@ async function verifyMilestoneData(processedData) {
       }
 
       // Data consistency and quality checks
-      if (milestone.saintNumber && milestone.milestone && milestone.milestoneDate) {
+      if (milestone.saintNumber && milestone.historicalMilestone && milestone.milestoneDate) {
         const saintKey = `${milestone.saintNumber}_${location.sheetId}`;
 
         if (!milestonesBySaint[saintKey]) {
@@ -497,8 +497,8 @@ async function verifyMilestoneData(processedData) {
         }
 
         // Check for duplicate milestone descriptions for the same saint
-        const existingMilestones = milestonesBySaint[saintKey].map(m => m.milestone.toLowerCase().trim());
-        if (existingMilestones.includes(milestone.milestone.toLowerCase().trim())) {
+        const existingMilestones = milestonesBySaint[saintKey].map(m => m.historicalMilestone.toLowerCase().trim());
+        if (existingMilestones.includes(milestone.historicalMilestone.toLowerCase().trim())) {
           warnings.push(`Duplicate milestone description for saint ${milestone.saintNumber}`);
         } else {
           milestonesBySaint[saintKey].push(milestone);
@@ -512,7 +512,7 @@ async function verifyMilestoneData(processedData) {
         }
 
         // Check milestone description quality
-        const milestoneText = milestone.milestone.trim();
+        const milestoneText = milestone.historicalMilestone.trim();
         if (milestoneText.length < 3) {
           warnings.push('Milestone description seems too short');
         }
@@ -576,7 +576,7 @@ async function verifyMilestoneData(processedData) {
           location: `${location.city}, ${location.state}`,
           saint: milestone.saintName || 'Unknown',
           saintNumber: milestone.saintNumber || 'Unknown',
-          milestone: milestone.milestone,
+          milestone: milestone.historicalMilestone,
           milestoneDate: milestone.milestoneDate,
           errors,
           warnings

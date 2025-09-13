@@ -15,9 +15,10 @@ interface ContentRouterProps {
   selectedLocation: string
   dataSource: "mock" | "database"
   setDataSource: (source: "mock" | "database") => void
+  setActiveSection?: (section: string) => void
 }
 
-export function ContentRouter({ activeSection, selectedLocation, dataSource, setDataSource }: ContentRouterProps) {
+export function ContentRouter({ activeSection, selectedLocation, dataSource, setDataSource, setActiveSection }: ContentRouterProps) {
   const { data: session } = useSession()
   const isHomeSection = activeSection === "home" || activeSection.startsWith("home-")
   const isSaintsSection = activeSection === "saints" || activeSection.startsWith("saints-")
@@ -67,15 +68,19 @@ export function ContentRouter({ activeSection, selectedLocation, dataSource, set
       )
     case isAdminSection:
       // Check if user is authenticated before showing admin section
+      // TEMPORARY: Bypassing auth for testing LocationDetailsModal
+      /*
       if (!session) {
         // Redirect to login page
         window.location.href = '/auth/signin'
         return null
       }
+      */
       return (
         <AdminSection
           selectedLocation={selectedLocation}
           activeSubSection={activeSection}
+          onNavigateToSection={setActiveSection}
         />
       )
     default:

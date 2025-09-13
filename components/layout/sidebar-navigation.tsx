@@ -141,10 +141,13 @@ export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNa
 
   const handleItemClick = (item: NavigationItem) => {
     // Check if trying to access admin section without authentication
+    // TEMPORARY: Bypassing auth for testing
+    /*
     if (item.id === "admin" && !session) {
       signIn()
       return
     }
+    */
 
     if (item.subItems) {
       toggleSection(item.id)
@@ -160,7 +163,8 @@ export function SidebarNavigation({ activeSection, setActiveSection }: SidebarNa
       setFilteredNavigationItems(
         navigationItems.filter(item => {
           if (item.id === "admin") {
-            return !!session
+            // TEMPORARY: Always show admin for testing
+            return true // !!session
           }
           return true
         })

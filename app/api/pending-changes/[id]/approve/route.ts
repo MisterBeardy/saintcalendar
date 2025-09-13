@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@/lib/generated/prisma';
+import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import logger from '@/lib/logger';
-
-const prisma = new PrismaClient();
 
 export async function POST(
   request: NextRequest,
@@ -62,28 +60,110 @@ export async function POST(
     // Process changes to convert location objects to relation syntax
     const processedChanges = transformChanges(pendingChange.changes);
 
+    // Helper function to filter changes to only valid entity fields
+    const filterValidFields = (changes: any, validFields: string[]): any => {
+      if (typeof changes !== 'object' || changes === null) return changes;
+
+      const filtered = {};
+      for (const key of validFields) {
+        if (key in changes) {
+          filtered[key] = changes[key];
+        }
+      }
+      return filtered;
+    };
+
     // Apply the changes in a transaction for safety
     const result = await prisma.$transaction(async (tx) => {
       let appliedChange;
 
+      logger.info(`Processing pending change for ${pendingChange.entityType}:`, {
+        entityId: pendingChange.entityId,
+        changes: pendingChange.changes,
+        hasDeleteFlag: !!(pendingChange.changes as any)?.delete
+      });
+
       switch (pendingChange.entityType) {
         case 'SAINT':
-          if ((pendingChange.changes as any)?.delete) {
-            // Delete the saint
-            appliedChange = await tx.saint.delete({
-              where: { id: pendingChange.entityId }
-            });
-            logger.info(`Deleted SAINT ${pendingChange.entityId}`, {
-              user: session.user.email,
-              entityType: 'SAINT',
-              entityId: pendingChange.entityId,
-              changes: pendingChange.changes
-            });
+          const changes = pendingChange.changes as any;
+          const isDelete = changes?.delete === true || changes?.action === 'delete';
+
+          if (isDelete) {
+            // Delete related records first to avoid foreign key constraints
+            try {
+              // 1. Delete all related Sticker records
+              const deletedStickers = await tx.sticker.deleteMany({
+                where: { saintId: pendingChange.entityId }
+              });
+              logger.info(`Deleted ${deletedStickers.count} Sticker records for SAINT ${pendingChange.entityId}`, {
+                user: session.user.email,
+                entityType: 'SAINT',
+                entityId: pendingChange.entityId
+              });
+
+              // 2. Delete all related Event records
+              const deletedEvents = await tx.event.deleteMany({
+                where: { saintId: pendingChange.entityId }
+              });
+              logger.info(`Deleted ${deletedEvents.count} Event records for SAINT ${pendingChange.entityId}`, {
+                user: session.user.email,
+                entityType: 'SAINT',
+                entityId: pendingChange.entityId
+              });
+
+              // 3. Delete all related Milestone records
+              const deletedMilestones = await tx.milestone.deleteMany({
+                where: { saintId: pendingChange.entityId }
+              });
+              logger.info(`Deleted ${deletedMilestones.count} Milestone records for SAINT ${pendingChange.entityId}`, {
+                user: session.user.email,
+                entityType: 'SAINT',
+                entityId: pendingChange.entityId
+              });
+
+              // 4. Delete all related SaintYear records
+              const deletedSaintYears = await tx.saintYear.deleteMany({
+                where: { saintId: pendingChange.entityId }
+              });
+              logger.info(`Deleted ${deletedSaintYears.count} SaintYear records for SAINT ${pendingChange.entityId}`, {
+                user: session.user.email,
+                entityType: 'SAINT',
+                entityId: pendingChange.entityId
+              });
+
+              // 5. Delete the Saint record
+              appliedChange = await tx.saint.delete({
+                where: { id: pendingChange.entityId }
+              });
+              logger.info(`Deleted SAINT ${pendingChange.entityId}`, {
+                user: session.user.email,
+                entityType: 'SAINT',
+                entityId: pendingChange.entityId,
+                changes: pendingChange.changes
+              });
+            } catch (deleteError) {
+              logger.error(`Error deleting SAINT ${pendingChange.entityId} and related records:`, {
+                error: deleteError,
+                user: session.user.email,
+                entityType: 'SAINT',
+                entityId: pendingChange.entityId
+              });
+              throw deleteError; // Re-throw to roll back transaction
+            }
           } else {
-            // Update the saint
+            // Filter to only valid Saint fields
+            const validSaintFields = ['saintNumber', 'name', 'saintName', 'saintDate', 'saintYear', 'locationId', 'totalBeers'];
+            const filteredChanges = filterValidFields(processedChanges, validSaintFields);
+
+            logger.info(`Attempting to update SAINT ${pendingChange.entityId} with filteredChanges:`, {
+              filteredChanges,
+              originalChanges: pendingChange.changes,
+              processedChanges
+            });
+
             appliedChange = await tx.saint.update({
               where: { id: pendingChange.entityId },
-              data: processedChanges as any
+              data: filteredChanges as any
             });
             logger.info(`Updated SAINT ${pendingChange.entityId}`, {
               user: session.user.email,
@@ -95,34 +175,56 @@ export async function POST(
           break;
 
         case 'LOCATION':
-          if ((pendingChange.changes as any)?.delete) {
-            // Delete the location
-            appliedChange = await tx.location.delete({
-              where: { id: pendingChange.entityId }
-            });
-            logger.info(`Deleted LOCATION ${pendingChange.entityId}`, {
-              user: session.user.email,
-              entityType: 'LOCATION',
-              entityId: pendingChange.entityId,
-              changes: pendingChange.changes
-            });
-          } else {
-            // Update the location
-            appliedChange = await tx.location.update({
-              where: { id: pendingChange.entityId },
-              data: processedChanges as any
-            });
-            logger.info(`Updated LOCATION ${pendingChange.entityId}`, {
-              user: session.user.email,
-              entityType: 'LOCATION',
-              entityId: pendingChange.entityId,
-              changes: pendingChange.changes
-            });
-          }
-          break;
+           const locationChanges = pendingChange.changes as any;
+           const isLocationDelete = locationChanges?.delete === true || locationChanges?.action === 'delete';
+
+           logger.info(`[LOCATION APPROVAL] Processing location change`, {
+             entityId: pendingChange.entityId,
+             isDelete: isLocationDelete,
+             originalChanges: pendingChange.changes,
+             processedChanges
+           });
+
+           if (isLocationDelete) {
+             // Delete the location
+             appliedChange = await tx.location.delete({
+               where: { id: pendingChange.entityId }
+             });
+             logger.info(`Deleted LOCATION ${pendingChange.entityId}`, {
+               user: session.user.email,
+               entityType: 'LOCATION',
+               entityId: pendingChange.entityId,
+               changes: pendingChange.changes
+             });
+           } else {
+             // Filter to only valid Location fields
+             const validLocationFields = ['state', 'city', 'displayName', 'address', 'phoneNumber', 'sheetId', 'isActive', 'managerEmail', 'openedDate', 'status', 'openingDate', 'closingDate', 'exclude'];
+             const filteredChanges = filterValidFields(processedChanges, validLocationFields);
+
+             logger.info(`[LOCATION APPROVAL] Filtered changes for update`, {
+               entityId: pendingChange.entityId,
+               filteredChanges,
+               validFields: validLocationFields
+             });
+
+             appliedChange = await tx.location.update({
+               where: { id: pendingChange.entityId },
+               data: filteredChanges as any
+             });
+             logger.info(`Updated LOCATION ${pendingChange.entityId}`, {
+               user: session.user.email,
+               entityType: 'LOCATION',
+               entityId: pendingChange.entityId,
+               changes: pendingChange.changes
+             });
+           }
+           break;
 
         case 'STICKER':
-          if ((pendingChange.changes as any)?.delete) {
+          const stickerChanges = pendingChange.changes as any;
+          const isStickerDelete = stickerChanges?.delete === true || stickerChanges?.action === 'delete';
+
+          if (isStickerDelete) {
             // Delete the sticker
             appliedChange = await tx.sticker.delete({
               where: { id: pendingChange.entityId }
@@ -134,10 +236,13 @@ export async function POST(
               changes: pendingChange.changes
             });
           } else {
-            // Update the sticker
+            // Filter to only valid Sticker fields
+            const validStickerFields = ['status', 'locationId', 'saintId', 'year', 'imageUrl', 'type'];
+            const filteredChanges = filterValidFields(processedChanges, validStickerFields);
+
             appliedChange = await tx.sticker.update({
               where: { id: pendingChange.entityId },
-              data: processedChanges as any
+              data: filteredChanges as any
             });
             logger.info(`Updated STICKER ${pendingChange.entityId}`, {
               user: session.user.email,

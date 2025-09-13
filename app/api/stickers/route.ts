@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@/lib/generated/prisma'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
+import logger from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,7 +80,14 @@ export async function GET(request: NextRequest) {
       take: limit
     })
 
-    const totalCount = await prisma.sticker.count({ where })
+    let totalCount: number
+    try {
+      totalCount = await prisma.sticker.count({ where })
+      logger.info('Sticker count query successful', { where, totalCount })
+    } catch (countError) {
+      logger.error('Error counting stickers', { where, error: countError })
+      throw countError // Re-throw to be caught by outer catch
+    }
 
     const transformedStickers = stickers.map(sticker => ({
       id: sticker.id,
@@ -115,9 +121,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Error fetching stickers:', error)
+    logger.error('Error fetching stickers', { error })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }
