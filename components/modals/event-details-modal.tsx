@@ -12,6 +12,22 @@ interface Beer {
   description?: string
 }
 
+interface Sticker {
+  id: string
+  year: number
+  imageUrl: string
+  type?: string
+  location: {
+    id: string
+    name: string
+    state: string
+  }
+  saint: {
+    id: string
+    name: string
+  }
+}
+
 interface EventDetails {
   id: string
   title: string
@@ -33,6 +49,7 @@ interface EventDetails {
     state: string
   }
   saint?: {
+    id: string
     name: string
   }
   tapBeers?: number
@@ -41,6 +58,12 @@ interface EventDetails {
   canBottleBeerList?: string[]
   milestoneCount?: number
   year?: number
+  approvedStickers?: Sticker[]
+}
+
+interface SaintData {
+  saintDate: string
+  saintYear: number
 }
 
 interface EventDetailsModalProps {
@@ -51,6 +74,7 @@ interface EventDetailsModalProps {
 
 export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetailsModalProps) {
   const [event, setEvent] = useState<EventDetails | null>(null)
+  const [saintData, setSaintData] = useState<SaintData | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -63,10 +87,43 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
     if (!eventId) return
 
     setLoading(true)
+    setSaintData(null) // Reset saint data
     try {
       const response = await fetch(`/api/events?id=${eventId}`)
       if (response.ok) {
         const data = await response.json()
+
+        // If event has a saint, fetch approved stickers for that saint and year
+        if (data.saint?.id) {
+          try {
+            // Extract year from event date (Unix timestamp)
+            const eventDate = new Date(data.date * 1000)
+            const eventYear = eventDate.getFullYear()
+
+            const stickersResponse = await fetch(`/api/stickers?saintId=${data.saint.id}&status=approved&year=${eventYear}&limit=10`)
+            if (stickersResponse.ok) {
+              const stickersData = await stickersResponse.json()
+              data.approvedStickers = stickersData.stickers || []
+            }
+          } catch (stickersError) {
+            console.error('Error fetching approved stickers:', stickersError)
+            data.approvedStickers = []
+          }
+
+          // Fetch saint data
+          try {
+            const saintResponse = await fetch(`/api/saints?id=${data.saint.id}`)
+            if (saintResponse.ok) {
+              const saint = await saintResponse.json()
+              setSaintData({ saintDate: saint.saintDate, saintYear: saint.saintYear })
+            }
+          } catch (saintError) {
+            console.error('Error fetching saint data:', saintError)
+          }
+        } else {
+          data.approvedStickers = []
+        }
+
         setEvent(data)
       }
     } catch (error) {
@@ -86,6 +143,14 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
     })
   }
 
+  const formatSaintDate = (dateStr: string) => {
+    if (!dateStr) return 'Unknown'
+    const [month, day] = dateStr.split('/').map(Number)
+    if (!month || !day) return dateStr
+    const date = new Date(2000, month - 1, day) // Use 2000 as year to get month name
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+  }
+
   const isHistoricalEvent = (timestamp: number) => {
     const today = new Date()
     const eventDate = new Date(timestamp * 1000)
@@ -97,16 +162,18 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg sm:max-w-md md:max-w-4xl bg-gradient-to-br from-white to-gray-50 border-0 shadow-2xl rounded-2xl mx-4" aria-describedby="event-description">
-        <DialogHeader className="pb-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl -m-6 mb-6 p-6">
+        <DialogHeader className="pb-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl -m-4 mb-4 p-4">
           <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-gray-800">
             <div className="p-2 bg-blue-100 rounded-lg">
               <Calendar className="h-6 w-6 text-blue-600" />
             </div>
             Event Details
+            {event && (
+              <span className="text-sm font-normal text-gray-600 bg-gray-100 px-2 py-1 rounded-md ml-2">
+                {event.saint?.id ? 'Saint Day' : event.milestoneCount && event.milestoneCount > 0 ? 'Milestone Day' : ''}
+              </span>
+            )}
           </DialogTitle>
-          <DialogDescription id="event-description" className="text-gray-600 mt-2">
-            Detailed information about the selected event including date, location, and associated data.
-          </DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -120,11 +187,11 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
             </div>
           </div>
         ) : event ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {/* Group Saint and Date cards */}
             <div className="flex gap-2 w-full">
               {/* Saint Information Card */}
-              <section className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1" aria-labelledby="event-title">
+              <section className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1" aria-labelledby="event-title">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
@@ -136,8 +203,9 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
                       <div className="text-sm text-muted-foreground">{event.realName}</div>
                     </div>
                   </div>
+                   
                   <div className="text-sm text-muted-foreground mt-1">
-                    {event.location ? `${event.location.displayName}, ${event.location.state}` : 'Unknown'} • Sainted: {event.saintedYear}
+                    {event.location ? `${event.location.displayName}` : 'Unknown'} • {saintData ? formatSaintDate(saintData.saintDate) : `Sainted: ${event.saintedYear || 'Unknown'}`}
                   </div>
                   {event.saintNumber && <div className="text-sm text-muted-foreground">#{event.saintNumber}</div>}
                 </div>
@@ -149,15 +217,28 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
             </section>
 
             {/* Date Card */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-800">Milestone/Event Date</div>
+                    <div className="font-medium text-lg text-gray-800">{formatDate(event.date)}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-800">Milestone/Event Date</div>
-                  <div className="font-medium text-lg text-gray-800">{formatDate(event.date)}</div>
-                </div>
+                {event.location && (
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <MapPin className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-800">Location</div>
+                      <div className="text-sm text-gray-600">{event.location.displayName}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             </div> {/* End Saint and Date group */}
@@ -165,14 +246,14 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
             {/* Group Burger and Beer cards */}
             <div className="flex gap-2 w-full">
               {/* Burger Information Card */}
-              <section className="bg-gradient-to-r from-green-50 to-lime-50 p-4 rounded-xl border border-green-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1">
-              <div className="flex items-center gap-3 mb-3">
+              <section className="bg-gradient-to-r from-green-50 to-lime-50 p-3 rounded-xl border border-green-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1">
+              <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <UtensilsCrossed className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="font-semibold text-gray-800">Burger Information</div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {event.burgers && event.burger ? (
                   <div>
                     <div className="font-medium text-sm text-gray-700 mb-2">
@@ -208,14 +289,14 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
             </section>
 
             {/* Beer Information Card */}
-            <section className="bg-gradient-to-r from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1">
-              <div className="flex items-center gap-3 mb-3">
+            <section className="bg-gradient-to-r from-amber-50 to-yellow-50 p-3 rounded-xl border border-amber-100 shadow-sm hover:shadow-md transition-shadow duration-200 flex-1">
+              <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-amber-100 rounded-lg">
                   <Beer className="h-5 w-5 text-amber-600" />
                 </div>
                 <div className="font-semibold text-gray-800">Beer Information</div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {event.tapBeerList && event.tapBeerList.length > 0 && (
                   <div>
                     <div className="font-medium text-sm text-gray-700 mb-2">
@@ -247,68 +328,58 @@ export function EventDetailsModal({ isOpen, onOpenChange, eventId }: EventDetail
             </section>
             </div> {/* End Burger and Beer group */}
 
-            {/* Location Card */}
-            {event.location && (
-              <div className="bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100 shadow-sm hover:shadow-md transition-shadow duration-200 w-1/2">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <MapPin className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-gray-800">Location</div>
-                    <div className="text-sm text-gray-600">{event.location.displayName}, {event.location.state}</div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             
 
             
 
-            {/* Additional Details Card */}
-            {(event.sticker || event.facebookEvent || event.year) && (
-              <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 w-1/2">
-                <div className="font-semibold text-gray-800 mb-3">Additional Details</div>
-                <div className="space-y-2 text-sm">
-                  {event.sticker && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Sticker:</span>
-                      <span className="font-medium text-gray-800">{event.sticker}</span>
-                    </div>
-                  )}
-                  {event.facebookEvent && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Facebook Event:</span>
-                      <span className="font-medium text-gray-800">
-                        {event.facebookEvent.startsWith('http') ? (
-                          <a
-                            href={event.facebookEvent}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline transition-colors focus:ring-2 focus:ring-blue-300 rounded px-1"
-                            aria-label="Open Facebook event in new tab"
-                          >
-                            Link
-                          </a>
-                        ) : (
-                          event.facebookEvent
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {event.year && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Year:</span>
-                      <span className="font-medium text-gray-800">{event.year}</span>
-                    </div>
-                  )}
+            {/* Approved Stickers Card */}
+            {event.saint?.id && (
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-xl border border-purple-100 shadow-sm hover:shadow-md transition-shadow duration-200 w-full">
+                <div className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                  <div className="p-1 bg-purple-100 rounded">
+                    🏷️
+                  </div>
+                  Stickers for {new Date(event.date * 1000).getFullYear()}
                 </div>
+                {event.approvedStickers && event.approvedStickers.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {event.approvedStickers.map((sticker) => (
+                      <div key={sticker.id} className="bg-white rounded-lg p-2 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <div className="aspect-square bg-gray-100 rounded-md overflow-hidden mb-2">
+                          <img
+                            src={sticker.imageUrl}
+                            alt={`${sticker.saint.name} sticker`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                            }}
+                          />
+                          <div className="hidden w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 text-xs">
+                            Image not available
+                          </div>
+                        </div>
+                        <div className="text-xs text-center">
+                          <div className="font-medium text-gray-800 truncate">{sticker.year}</div>
+                          <div className="text-gray-600 truncate">{sticker.location.name}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    <div className="text-2xl mb-2">🏷️</div>
+                    <div className="text-sm">No approved stickers found for {new Date(event.date * 1000).getFullYear()}</div>
+                  </div>
+                )}
               </div>
             )}
+
+          
           </div>
         ) : (
-          <div className="text-center py-12">
+          <div className="text-center py-8">
             <div className="text-gray-400 text-lg mb-2">📅</div>
             <div className="text-sm text-gray-500">Event details not found</div>
           </div>

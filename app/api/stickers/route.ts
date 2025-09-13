@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const saintName = searchParams.get('saint')
     const year = searchParams.get('year')
     const locationId = searchParams.get('locationId')
+    const status = searchParams.get('status')
     const includeEvents = searchParams.get('includeEvents') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -35,6 +36,9 @@ export async function GET(request: NextRequest) {
     }
     if (locationId) {
       where.locationId = locationId
+    }
+    if (status) {
+      where.status = status
     }
 
     const skip = (page - 1) * limit

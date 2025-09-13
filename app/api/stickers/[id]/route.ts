@@ -165,3 +165,92 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     await prisma.$disconnect()
   }
 }
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const body = await request.json()
+    const { saintId, locationId, milestone, status, year, imageUrl } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Sticker ID is required' }, { status: 400 })
+    }
+
+    // Validate required fields
+    if (!saintId || !locationId) {
+      return NextResponse.json({ error: 'Saint ID and Location ID are required' }, { status: 400 })
+    }
+
+    // Update the sticker - always reset status to pending for re-review
+    const updatedSticker = await prisma.sticker.update({
+      where: { id },
+      data: {
+        saintId,
+        locationId,
+        milestone: milestone || null,
+        status: 'pending',
+        year: year ? parseInt(year) : null,
+        imageUrl: imageUrl || null,
+        updatedAt: new Date()
+      },
+      include: {
+        saint: {
+          select: {
+            id: true,
+            name: true,
+            saintName: true
+          }
+        },
+        location: {
+          select: {
+            id: true,
+            displayName: true,
+            state: true,
+            city: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      sticker: updatedSticker
+    })
+  } catch (error) {
+    console.error('Error updating sticker:', error)
+    if (error instanceof Error && error.message.includes('Record to update not found')) {
+      return NextResponse.json({ error: 'Sticker not found' }, { status: 404 })
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+
+    if (!id) {
+      return NextResponse.json({ error: 'Sticker ID is required' }, { status: 400 })
+    }
+
+    // Delete the sticker
+    await prisma.sticker.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Sticker deleted successfully'
+    })
+  } catch (error) {
+    console.error('Error deleting sticker:', error)
+    if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
+      return NextResponse.json({ error: 'Sticker not found' }, { status: 404 })
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
+  }
+}

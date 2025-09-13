@@ -4,11 +4,28 @@ import logger from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   try {
-    // For now, return pending stickers adapted to the expected format
-    // In a real implementation, this would be a separate StickerSubmission model
-    const pendingStickers = await prisma.sticker.findMany({
+    const { searchParams } = new URL(request.url)
+    const statusParam = searchParams.get('status')
+
+    // Determine which statuses to include based on query parameter
+    let statusFilter: string[] = []
+
+    if (statusParam === 'all') {
+      // Return all submissions (pending, approved, rejected)
+      statusFilter = ['pending', 'approved', 'rejected']
+    } else if (statusParam) {
+      // Parse comma-separated status values
+      statusFilter = statusParam.split(',').map(s => s.trim())
+    } else {
+      // Default behavior: return all submissions for backward compatibility
+      statusFilter = ['pending', 'approved', 'rejected']
+    }
+
+    const managedStickers = await prisma.sticker.findMany({
       where: {
-        status: 'pending'
+        status: {
+          in: statusFilter
+        }
       },
       include: {
         saint: {
@@ -34,7 +51,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Transform to match the expected format
-    const submissions = pendingStickers.map(sticker => ({
+    const submissions = managedStickers.map(sticker => ({
       id: sticker.id,
       saintName: sticker.saint?.saintName || 'Unknown Saint',
       submittedBy: 'Admin', // In a real system, this would be the user who uploaded

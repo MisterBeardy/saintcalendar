@@ -5,14 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Check, X, Eye, Search, Upload, FileImage } from "lucide-react"
+import { Check, X, Eye, Search, Upload, FileImage, Edit, Trash2 } from "lucide-react"
 import { usePendingChangesByEntity } from "@/hooks/use-pending-changes-by-entity"
 import { PendingChangeBadge } from "@/components/ui/pending-change-badge"
 import { DragDropZone, FileWithPreview } from "./sticker-upload/drag-drop-zone"
 import { FileUploadService } from "@/lib/services/file-upload"
 import { AssociationDialog, type StickerAssociation } from "./sticker-upload/association-dialog"
+import { useSaintsData } from "@/hooks/useSaintsData"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { useNotificationActions } from "@/components/admin/notification-system"
 
 interface StickerSubmission {
   id: string
@@ -32,6 +38,9 @@ interface StickerManagementProps {
 }
 
 export function StickerManagement({ onNavigateToPending }: StickerManagementProps) {
+  // Notification system
+  const { success } = useNotificationActions()
+
   // Upload state
   const [uploadedFiles, setUploadedFiles] = useState<FileWithPreview[]>([])
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({})
@@ -51,9 +60,15 @@ export function StickerManagement({ onNavigateToPending }: StickerManagementProp
   // Fetch pending changes for stickers
   const { hasPendingChange } = usePendingChangesByEntity('STICKER')
 
-  const fetchStickerSubmissions = useCallback(async () => {
+  // Fetch saints and locations data for dropdowns
+  const { saints, locations, saintsLoading, locationsLoading } = useSaintsData()
+
+  const fetchStickerSubmissions = useCallback(async (statusFilter?: string) => {
     try {
-      const response = await fetch('/api/sticker-submissions')
+      const url = statusFilter
+        ? `/api/sticker-submissions?status=${statusFilter}`
+        : '/api/sticker-submissions'
+      const response = await fetch(url)
       if (response.ok) {
         const data: StickerSubmission[] = await response.json()
         setStickerSubmissions(data)
@@ -66,11 +81,98 @@ export function StickerManagement({ onNavigateToPending }: StickerManagementProp
   }, [])
 
   useEffect(() => {
-    fetchStickerSubmissions()
+    fetchStickerSubmissions('all')
   }, [fetchStickerSubmissions])
   const [selectedSubmission, setSelectedSubmission] = useState<StickerSubmission | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [searchTerm, setSearchTerm] = useState("")
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [selectedStickerForEdit, setSelectedStickerForEdit] = useState<StickerSubmission | null>(null)
+  const [selectedStickerForDelete, setSelectedStickerForDelete] = useState<StickerSubmission | null>(null)
+
+  // Edit form state
+  const [editSaintId, setEditSaintId] = useState("")
+  const [editLocationId, setEditLocationId] = useState("")
+  const [editMilestone, setEditMilestone] = useState("")
+  const [editYear, setEditYear] = useState("")
+  const [editImageUrl, setEditImageUrl] = useState("")
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState("")
+
+  // Milestone dropdown state
+  const [milestoneOptions, setMilestoneOptions] = useState<string[]>([])
+  const [milestoneLoading, setMilestoneLoading] = useState(false)
+  const [yearAutoPopulated, setYearAutoPopulated] = useState(false)
+
+  // Delete state
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState("")
+
+  // Fetch milestone options for selected saint
+  const fetchMilestoneOptions = useCallback(async (saintId: string) => {
+    if (!saintId) {
+      setMilestoneOptions([])
+      return
+    }
+
+    setMilestoneLoading(true)
+    try {
+      const response = await fetch(`/api/saints/${saintId}/milestones`)
+      if (response.ok) {
+        const options: string[] = await response.json()
+        setMilestoneOptions(options)
+      } else {
+        console.error('Failed to fetch milestone options')
+        setMilestoneOptions([])
+      }
+    } catch (error) {
+      console.error('Error fetching milestone options:', error)
+      setMilestoneOptions([])
+    } finally {
+      setMilestoneLoading(false)
+    }
+  }, [])
+
+  // Extract year from milestone description
+  const extractYearFromMilestone = (milestone: string): string => {
+    // Try to match date patterns: YYYY-MM-DD or YYYY
+    const dateMatch = milestone.match(/(\d{4})(?:-(\d{2})-(\d{2}))?/)
+    if (dateMatch) {
+      return dateMatch[1] // Return the year (YYYY)
+    }
+    return ""
+  }
+
+  // Handle milestone selection
+  const handleMilestoneChange = (value: string) => {
+    if (value === "custom") {
+      // Allow custom entry - don't change the milestone value yet
+      setEditMilestone("")
+      setEditYear("")
+      setYearAutoPopulated(false)
+    } else {
+      setEditMilestone(value)
+
+      if (value) {
+        const extractedYear = extractYearFromMilestone(value)
+        if (extractedYear) {
+          setEditYear(extractedYear)
+          setYearAutoPopulated(true)
+        }
+      } else {
+        // Clear year if no milestone selected
+        setEditYear("")
+        setYearAutoPopulated(false)
+      }
+    }
+  }
+
+  // Handle manual year change
+  const handleYearChange = (value: string) => {
+    setEditYear(value)
+    setYearAutoPopulated(false) // Mark as manually entered
+  }
 
   const filteredSubmissions = stickerSubmissions.filter((submission) => {
     const matchesStatus = filterStatus === "all" || submission.status === filterStatus
@@ -106,11 +208,7 @@ export function StickerManagement({ onNavigateToPending }: StickerManagementProp
 
       if (response.ok) {
         // Refresh the submissions list
-        const response = await fetch('/api/sticker-submissions')
-        if (response.ok) {
-          const data = await response.json()
-          setStickerSubmissions(data)
-        }
+        await fetchStickerSubmissions('all')
       } else {
         console.error('Failed to approve submission')
       }
@@ -131,11 +229,7 @@ export function StickerManagement({ onNavigateToPending }: StickerManagementProp
 
       if (response.ok) {
         // Refresh the submissions list
-        const response = await fetch('/api/sticker-submissions')
-        if (response.ok) {
-          const data = await response.json()
-          setStickerSubmissions(data)
-        }
+        await fetchStickerSubmissions('all')
       } else {
         console.error('Failed to reject submission')
       }
@@ -143,6 +237,118 @@ export function StickerManagement({ onNavigateToPending }: StickerManagementProp
       console.error('Error rejecting submission:', error)
     }
   }
+
+  // Edit sticker handler
+  const handleEditSticker = async () => {
+    if (!selectedStickerForEdit) return
+
+    setEditLoading(true)
+    setEditError("")
+
+    try {
+      const response = await fetch(`/api/stickers/${selectedStickerForEdit.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          saintId: editSaintId,
+          locationId: editLocationId,
+          milestone: editMilestone,
+          year: editYear,
+          imageUrl: editImageUrl
+        }),
+      })
+
+      if (response.ok) {
+        // Refresh the submissions list
+        await fetchStickerSubmissions('all')
+        setEditModalOpen(false)
+        setSelectedStickerForEdit(null)
+        // Reset form
+        setEditSaintId("")
+        setEditLocationId("")
+        setEditMilestone("")
+        setEditYear("")
+        setEditImageUrl("")
+        setMilestoneOptions([])
+        setYearAutoPopulated(false)
+        // Show success message
+        success(
+          'Sticker Updated',
+          'Status has been reset to "Pending" for re-approval.'
+        )
+      } else {
+        const errorData = await response.json()
+        setEditError(errorData.error || 'Failed to update sticker')
+      }
+    } catch (error) {
+      console.error('Error updating sticker:', error)
+      setEditError('Network error occurred')
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  // Delete sticker handler
+  const handleDeleteSticker = async () => {
+    if (!selectedStickerForDelete) return
+
+    setDeleteLoading(true)
+    setDeleteError("")
+
+    try {
+      const response = await fetch(`/api/stickers/${selectedStickerForDelete.id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        // Refresh the submissions list
+        await fetchStickerSubmissions('all')
+        setDeleteModalOpen(false)
+        setSelectedStickerForDelete(null)
+      } else {
+        const errorData = await response.json()
+        setDeleteError(errorData.error || 'Failed to delete sticker')
+      }
+    } catch (error) {
+      console.error('Error deleting sticker:', error)
+      setDeleteError('Network error occurred')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  // Initialize edit form when sticker is selected
+  useEffect(() => {
+    if (selectedStickerForEdit) {
+      // Find the current saint and location to pre-populate form
+      const currentSaint = saints.find(s => s.saintName === selectedStickerForEdit.saintName)
+      const currentLocation = locations.find(l => l.displayName === selectedStickerForEdit.location)
+
+      setEditSaintId(currentSaint?.id || "")
+      setEditLocationId(currentLocation?.id || "")
+      setEditMilestone(selectedStickerForEdit.historicalEvent || "")
+      setEditYear(selectedStickerForEdit.notes?.match(/Year: (\d+)/)?.[1] || "")
+      setEditImageUrl(selectedStickerForEdit.imageUrl || "")
+      setEditError("")
+      setYearAutoPopulated(false)
+
+      // Fetch milestone options for the selected saint
+      if (currentSaint?.id) {
+        fetchMilestoneOptions(currentSaint.id)
+      }
+    }
+  }, [selectedStickerForEdit, saints, locations, fetchMilestoneOptions])
+
+  // Fetch milestone options when saint changes
+  useEffect(() => {
+    if (editSaintId) {
+      fetchMilestoneOptions(editSaintId)
+    } else {
+      setMilestoneOptions([])
+    }
+  }, [editSaintId, fetchMilestoneOptions])
 
   // Upload handling functions
   const handleFilesSelected = async (files: FileWithPreview[]) => {
@@ -203,7 +409,7 @@ export function StickerManagement({ onNavigateToPending }: StickerManagementProp
           setCurrentFile(null)
           alert(`All ${filesToAssociate.length} files uploaded and associated successfully!`)
           // Refresh the submissions list
-          fetchStickerSubmissions()
+          fetchStickerSubmissions('all')
         }
       } else {
         console.error('Upload failed:', result.error)
@@ -263,14 +469,18 @@ export function StickerManagement({ onNavigateToPending }: StickerManagementProp
       </div>
 
       <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <Upload className="w-4 h-4" />
             Upload Stickers
           </TabsTrigger>
           <TabsTrigger value="review" className="flex items-center gap-2">
             <Eye className="w-4 h-4" />
-            Review Submissions
+            Review All
+          </TabsTrigger>
+          <TabsTrigger value="manage" className="flex items-center gap-2">
+            <Edit className="w-4 h-4" />
+            Manage Stickers
           </TabsTrigger>
         </TabsList>
 
@@ -548,7 +758,7 @@ export function StickerManagement({ onNavigateToPending }: StickerManagementProp
                           </DialogTrigger>
                           <DialogContent>
                             <div className="flex flex-col gap-2 text-center sm:text-left mb-6">
-                              <h2 className="text-lg font-semibold">Review Submission</h2>
+                              <DialogTitle className="text-lg font-semibold">Review Submission</DialogTitle>
                               <p className="text-muted-foreground text-sm">
                                 Review sticker submission details including saint information and submission data.
                               </p>
@@ -645,7 +855,425 @@ export function StickerManagement({ onNavigateToPending }: StickerManagementProp
         </CardContent>
       </Card>
         </TabsContent>
+
+        <TabsContent value="manage" className="space-y-6">
+          {/* Filters */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex gap-4 items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search stickers..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant={filterStatus === "approved" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFilterStatus("approved")}
+                  >
+                    Approved
+                  </Button>
+                  <Button
+                    variant={filterStatus === "rejected" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFilterStatus("rejected")}
+                  >
+                    Rejected
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stickers Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Manage Stickers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-medium">Saint Name</th>
+                      <th className="text-left p-3 font-medium">Submitted By</th>
+                      <th className="text-left p-3 font-medium">Location</th>
+                      <th className="text-left p-3 font-medium">Historical Event</th>
+                      <th className="text-left p-3 font-medium">Status</th>
+                      <th className="text-left p-3 font-medium">Submission Date</th>
+                      <th className="text-left p-3 font-medium">Image</th>
+                      <th className="text-right p-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stickerSubmissions
+                      .filter((submission) => submission.status === "approved" || submission.status === "rejected")
+                      .filter((submission) => {
+                        const matchesSearch =
+                          submission.saintName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          submission.submittedBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          submission.location.toLowerCase().includes(searchTerm.toLowerCase())
+                        return matchesSearch
+                      })
+                      .map((submission) => (
+                        <tr key={submission.id} className="border-b hover:bg-muted/50">
+                          <td className="p-3 font-medium">{submission.saintName}</td>
+                          <td className="p-3">{submission.submittedBy}</td>
+                          <td className="p-3">
+                            {submission.location}, {submission.state}
+                          </td>
+                          <td className="p-3">{submission.historicalEvent}</td>
+                          <td className="p-3">
+                            {getStatusBadge(submission.status)}
+                          </td>
+                          <td className="p-3 text-muted-foreground">
+                            {new Date(submission.submissionDate).toLocaleDateString()}
+                          </td>
+                          <td className="p-3">
+                            {submission.imageUrl && (
+                              <img
+                                src={submission.imageUrl}
+                                alt="Sticker preview"
+                                className="w-12 h-12 object-cover rounded border"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                }}
+                              />
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <div className="flex gap-1 justify-end">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="sm" onClick={() => setSelectedSubmission(submission)}>
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <div className="flex flex-col gap-2 text-center sm:text-left mb-6">
+                                    <DialogTitle className="text-lg font-semibold">Sticker Details</DialogTitle>
+                                    <p className="text-muted-foreground text-sm">
+                                      View sticker submission details.
+                                    </p>
+                                  </div>
+                                  {selectedSubmission && (
+                                    <div className="space-y-4">
+                                      {selectedSubmission.imageUrl && (
+                                        <div className="flex justify-center">
+                                          <div className="w-full max-w-md">
+                                            <img
+                                              src={selectedSubmission.imageUrl}
+                                              alt="Sticker preview"
+                                              className="w-full max-h-64 object-contain border rounded-lg shadow-sm"
+                                              onError={(e) => {
+                                                e.currentTarget.style.display = 'none'
+                                              }}
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                      <div className="grid gap-4 md:grid-cols-2">
+                                        <div>
+                                          <label className="text-sm font-medium">Saint Name</label>
+                                          <p className="text-sm text-muted-foreground">{selectedSubmission.saintName}</p>
+                                        </div>
+                                        <div>
+                                          <label className="text-sm font-medium">Submitted By</label>
+                                          <p className="text-sm text-muted-foreground">{selectedSubmission.submittedBy}</p>
+                                        </div>
+                                        <div>
+                                          <label className="text-sm font-medium">Location</label>
+                                          <p className="text-sm text-muted-foreground">
+                                            {selectedSubmission.location}, {selectedSubmission.state}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <label className="text-sm font-medium">Historical Event</label>
+                                          <p className="text-sm text-muted-foreground">
+                                            {selectedSubmission.historicalEvent}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      {selectedSubmission.notes && (
+                                        <div>
+                                          <label className="text-sm font-medium">Notes</label>
+                                          <p className="text-sm text-muted-foreground">{selectedSubmission.notes}</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </DialogContent>
+                              </Dialog>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedStickerForEdit(submission)
+                                  setEditModalOpen(true)
+                                }}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedStickerForDelete(submission)
+                                  setDeleteModalOpen(true)
+                                }}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Edit Sticker Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <div className="flex flex-col gap-2 text-center sm:text-left mb-6">
+            <DialogTitle className="text-lg font-semibold">Edit Sticker</DialogTitle>
+            <p className="text-muted-foreground text-sm">
+              Update sticker details and associations.
+            </p>
+          </div>
+          {selectedStickerForEdit && (
+            <div className="space-y-6">
+              {editError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-700">{editError}</p>
+                </div>
+              )}
+
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-700">
+                  <strong>Note:</strong> Editing this sticker will reset its status to "Pending" for re-approval.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-saint">Saint Name</Label>
+                  <Select value={editSaintId} onValueChange={setEditSaintId} disabled={saintsLoading}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a saint" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {saints.map((saint) => (
+                        <SelectItem key={saint.id} value={saint.id}>
+                          {saint.saintName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-location">Location</Label>
+                  <Select value={editLocationId} onValueChange={setEditLocationId} disabled={locationsLoading}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location) => (
+                        <SelectItem key={location.id} value={location.id}>
+                          {location.displayName}, {location.state}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="edit-milestone">Historical Event/Milestone</Label>
+                  <Select
+                    value={editMilestone}
+                    onValueChange={handleMilestoneChange}
+                    disabled={milestoneLoading || !editSaintId}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={milestoneLoading ? "Loading milestones..." : "Select a milestone or enter manually"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {milestoneOptions.map((option, index) => (
+                        <SelectItem key={index} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="custom">Enter custom milestone...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {milestoneOptions.length === 0 && !milestoneLoading && editSaintId && (
+                    <p className="text-sm text-muted-foreground">
+                      No milestones found for this saint. You can enter a custom milestone below.
+                    </p>
+                  )}
+                  {editMilestone === "" && editSaintId && (
+                    <Input
+                      value={editMilestone}
+                      onChange={(e) => setEditMilestone(e.target.value)}
+                      placeholder="Enter custom milestone or historical event"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-year">
+                    Year {yearAutoPopulated && <span className="text-sm text-muted-foreground">(auto-populated)</span>}
+                  </Label>
+                  <Input
+                    id="edit-year"
+                    type="number"
+                    value={editYear}
+                    onChange={(e) => handleYearChange(e.target.value)}
+                    placeholder="Enter year"
+                    className={yearAutoPopulated ? "border-blue-300 bg-blue-50" : ""}
+                  />
+                  {yearAutoPopulated && (
+                    <p className="text-xs text-muted-foreground">
+                      Year was auto-populated from the selected milestone. You can edit it manually.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-image">Image URL</Label>
+                  <Input
+                    id="edit-image"
+                    value={editImageUrl}
+                    onChange={(e) => setEditImageUrl(e.target.value)}
+                    placeholder="Enter image URL or upload new image"
+                  />
+                </div>
+
+              </div>
+
+              {selectedStickerForEdit.imageUrl && (
+                <div className="space-y-2">
+                  <Label>Current Image</Label>
+                  <div className="flex justify-center">
+                    <img
+                      src={selectedStickerForEdit.imageUrl}
+                      alt="Current sticker"
+                      className="max-w-32 max-h-32 object-contain border rounded"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={handleEditSticker}
+                  disabled={editLoading || !editSaintId || !editLocationId}
+                  className="flex-1"
+                >
+                  {editLoading ? "Saving..." : "Save Changes"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditModalOpen(false)
+                    setSelectedStickerForEdit(null)
+                    setEditError("")
+                    setMilestoneOptions([])
+                    setYearAutoPopulated(false)
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Sticker Modal */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent>
+          <div className="flex flex-col gap-2 text-center sm:text-left mb-6">
+            <DialogTitle className="text-lg font-semibold">Delete Sticker</DialogTitle>
+            <p className="text-muted-foreground text-sm">
+              Are you sure you want to delete this sticker? This action cannot be undone.
+            </p>
+          </div>
+          {selectedStickerForDelete && (
+            <div className="space-y-4">
+              {deleteError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-700">{deleteError}</p>
+                </div>
+              )}
+
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-3 mb-2">
+                  <p className="text-sm font-medium">{selectedStickerForDelete.saintName}</p>
+                  {getStatusBadge(selectedStickerForDelete.status)}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Location: {selectedStickerForDelete.location}, {selectedStickerForDelete.state}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Submitted by {selectedStickerForDelete.submittedBy} on {new Date(selectedStickerForDelete.submissionDate).toLocaleDateString()}
+                </p>
+                {selectedStickerForDelete.historicalEvent && (
+                  <p className="text-sm text-muted-foreground">
+                    Event: {selectedStickerForDelete.historicalEvent}
+                  </p>
+                )}
+              </div>
+
+              {selectedStickerForDelete.imageUrl && (
+                <div className="flex justify-center">
+                  <img
+                    src={selectedStickerForDelete.imageUrl}
+                    alt="Sticker to delete"
+                    className="max-w-24 max-h-24 object-contain border rounded"
+                  />
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteSticker}
+                  disabled={deleteLoading}
+                  className="flex-1"
+                >
+                  {deleteLoading ? "Deleting..." : "Delete Sticker"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteModalOpen(false)
+                    setSelectedStickerForDelete(null)
+                    setDeleteError("")
+                  }}
+                  className="flex-1"
+                  disabled={deleteLoading}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Association Dialog */}
       <AssociationDialog
